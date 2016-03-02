@@ -90,7 +90,7 @@ We want to simplify lighting and rendering by using cached animation, instead of
 
    .. todo:: linking issues are ignored here, everything assumed to be local, no proxies needed!
 
-   a) Geometry (mesh) component is created by the user. (Geo component is by default initialized as the Mesh data block pointed to by ob->data)
+   a) Geometry (mesh) component is default for mesh objects (or created by the user). Geo component is by default initialized as the Mesh data block pointed to by ob->data.
 
       .. image:: /images/placeholder.png
 
