@@ -1,0 +1,279 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Unified caching API &mdash; proposal-2.8 1.0 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="proposal-2.8 1.0 documentation" href="index.html"/>
+        <link rel="next" title="Fracture Simulation Workflow with Nodes" href="fracture.html"/>
+        <link rel="prev" title="Object Nodes" href="object_nodes.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> proposal-2.8
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="pipeline.html">Pipelines, Linking, Proxies, and Overrides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="object_nodes.html">Object Nodes</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="">Unified caching API</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#time-sequences-and-streaming">Time Sequences and Streaming</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#cacheable-data">Cacheable Data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#cache-backends">Cache Backends</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#level-of-integration">Level of Integration</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="fracture.html">Fracture Simulation Workflow with Nodes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="todo.html">Overview and ToDo list of topics</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="index.html">proposal-2.8</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="index.html">Docs</a> &raquo;</li>
+      
+    <li>Unified caching API</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="_sources/caching.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="unified-caching-api">
+<h1>Unified caching API<a class="headerlink" href="#unified-caching-api" title="Permalink to this headline">¶</a></h1>
+<p>&#8220;Caching&#8221; has several meanings in the context of CG, which makes the ongoing discussion about it&#8217;s purpose and implementation a bit confusing:</p>
+<ol class="arabic simple">
+<li>Storing intermediate values of a complex calculation to avoid recomputing when these results are used frequently. An example is a compositor gaussian blur node which has to read the same input value for all neighboring output pixels.</li>
+<li>Storing results to avoid recomputing when the same (sub-)process is repeated again and again over time. An example is the calculation of mesh deformation during animation, when the animator plays back a single shot over and over.</li>
+<li>Interchange of data in specific formats for the purpose of sharing assets between different applications. This is usually called &#8220;import/export&#8221;, but shares many similarities with caching. Caching can be viewed as a special case of import/export, where the exporting application is the same as the importing application.</li>
+</ol>
+<p>Intermediate value caching (1.) is usually handled with internal data structures and this case is not so relevant on the user level. However, caching of intermediate values may overlap with caching for process optimization (2.). For instance the compositor might also cache an image sequence to cut short computation of unchanged nodes, in addition to internal buffers for intermediate results.</p>
+<p>An important case of the &#8220;interchange&#8221; kind (3.) is exporting to a renderer. In the case of Blender this has been less relevant than in other applications in the past because of the tight integration between renderers and the &#8220;host&#8221; program. Alembic was developed for the express purpose of modeler-to-renderer communication. Beside making the choice of renderer more flexible, such caching of results has benefits for render farms too: rather than &#8220;ask&#8221; the modeling software for each frame through an API, the export and import processes can be decoupled. The render farm can much more easily access a central cache file of a shot from each worker (&#8220;slave&#8221;) machine without duplicating the full data. Error-checking a cached export prior to time-consuming rendering becomes a lot easier and can save valuable time and money.</p>
+<p>So &#8220;caching&#8221; in this scope is a combination of</p>
+<ol class="arabic simple">
+<li>Export from a data source to a suitable data format</li>
+<li>Import to a data target from a suitable data format</li>
+<li>Utility features to manage storage and validity of cached data</li>
+</ol>
+<p>Export and import can also be used separately. For instance a mesh cache can be used to export animation, and then avoid linking complex rigs during the lighting and rendering stage.</p>
+<div class="section" id="time-sequences-and-streaming">
+<h2>Time Sequences and Streaming<a class="headerlink" href="#time-sequences-and-streaming" title="Permalink to this headline">¶</a></h2>
+<p>Classic export/import in Blender only handles invariant data blocks, i.e. data which does not change over time. With the notable exception of keyframe animation curves, importing only works for static data with a single state for every frame of animation. For the most interesting applications of caching a sequence of data states would be exported:</p>
+<ul class="simple">
+<li>animated meshes</li>
+<li>simulation data</li>
+<li>render results</li>
+</ul>
+<p>Caching such sequences requires a different workflow than the typical import operator, because it cannot be loaded in a single step. Instead each data frame is loaded whenever it is needed by the scene or a tool working with time sequences (e.g. motion paths). The source of the data (a &#8220;stream&#8221;) must be available permanently, on request of the import target.</p>
+<p>The &#8220;Point Cache&#8221; system is a crude implementation of such a data-streaming feature, but it is hamstrung by a number of aspects:</p>
+<ul class="simple">
+<li>Format Limitations: Data types in the format are hardcoded to point-like data (particles, vertices). Some additional &#8220;extra&#8221; data like smoke voxels have been hacked in, but the format is not designed for general purpose caching.</li>
+<li>Topology fixation: Precludes changes in mesh topology or dynamic particle emission.</li>
+<li>Integration Complexity: Wide range of API calls, flags, half-specified features and side effects need to be handled.</li>
+<li>Inefficiency: Compression is very basic. Many data types (esp. voxel data) would allow much better optimization in specialized formats, e.g. Alembic or VDB.</li>
+</ul>
+<p>The widely used &#8220;Mesh Cache&#8221; modifier suffers from similar issues: It only supports mesh deformation and is not very efficient in terms of storage.</p>
+</div>
+<div class="section" id="cacheable-data">
+<h2>Cacheable Data<a class="headerlink" href="#cacheable-data" title="Permalink to this headline">¶</a></h2>
+<p>Here&#8217;s a plain list of stuff in Blender that could benefit from caching and/or export/import in pipelines, in increasing order of exoticness and implementation complexity.</p>
+<ul class="simple">
+<li>Meshes (both deformation and full topology)</li>
+<li>Particles (with all associated attributes)</li>
+<li>Hair strands (special case of mesh topology really)</li>
+<li>Smoke/Fluid voxel data</li>
+<li>Poses (could be useful for complex rigs!)</li>
+<li>Object transforms + other properties = Scene layout cache (what &#8220;Base&#8221; stores in &#8220;Scene&#8221; datablocks)</li>
+<li>Instances (what actually is an &#8220;Object&#8221;? Difference of Base and DupliObject in scenes?)</li>
+<li>...</li>
+</ul>
+</div>
+<div class="section" id="cache-backends">
+<h2>Cache Backends<a class="headerlink" href="#cache-backends" title="Permalink to this headline">¶</a></h2>
+<p>Various file formats can be used for storing cached data efficiently. This is important for large data sets because the amount of data essentially gets multiplied by the number of frames to be cached.</p>
+<ul class="simple">
+<li>Alembic: Designed primarily as a modeler-to-renderer pipeline tool. Good general-purpose format for meshes, particles, curves. Supports object hierarchies and instancing.</li>
+<li>OpenVDB: Specialized format for sparse voxel data (fluid and smoke simulation). Very good optimization for empty space. Fast and (cpu-)cache-friendly access for simulations and rendering.</li>
+<li>others?</li>
+</ul>
+<p>For a particular type of data the cache backend should be a user choice, with a suitable default.</p>
+<p>Storing caches inside .blend files might be of interest in some cases. Cached data might be stored in a plain internal format inside &#8216;.blend&#8217; files. However, it would be more efficient to &#8220;pack&#8221; regular cache files (Alembic, OpenVDB) with the .blend file, like we already do with images. That way the compression of the original file types can be utilized and no extra read/write functionality needs to be coded.</p>
+</div>
+<div class="section" id="level-of-integration">
+<h2>Level of Integration<a class="headerlink" href="#level-of-integration" title="Permalink to this headline">¶</a></h2>
+<p>Cache export/import can be applied on a number of different levels, depending on the kind of data that is to be cached or the contents of an external cache file.</p>
+<ol class="arabic simple">
+<li>Cache only object components: This is what Blender currently does for individual simulations or a mesh cache. Only the data of a specific component is replaced. No components are added or removed based on the cache file content. Can also be done for a whole object or scene, important thing is that only existing components are touched.</li>
+<li>Cache a complete Object: Allow the caching system to create/remove/replace components of the cached object, in addition to replacing their internal data. Can also be done for a whole scene, but only existing objects are modified when importing.</li>
+<li>Cache an entire scene: Allow creation of new objects as well as manipulating existing ones.</li>
+</ol>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="fracture.html" class="btn btn-neutral float-right" title="Fracture Simulation Workflow with Nodes" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="object_nodes.html" class="btn btn-neutral" title="Object Nodes" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Lukas Tönne.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'1.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

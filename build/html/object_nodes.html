@@ -1,0 +1,237 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Object Nodes &mdash; proposal-2.8 1.0 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="proposal-2.8 1.0 documentation" href="index.html"/>
+        <link rel="next" title="Unified caching API" href="caching.html"/>
+        <link rel="prev" title="Pipelines, Linking, Proxies, and Overrides" href="pipeline.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> proposal-2.8
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="pipeline.html">Pipelines, Linking, Proxies, and Overrides</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="">Object Nodes</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#where-should-nodes-be-hooked-into-blender">Where should nodes be hooked into Blender?</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="caching.html">Unified caching API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="fracture.html">Fracture Simulation Workflow with Nodes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="todo.html">Overview and ToDo list of topics</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="index.html">proposal-2.8</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="index.html">Docs</a> &raquo;</li>
+      
+    <li>Object Nodes</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="_sources/object_nodes.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="object-nodes">
+<h1>Object Nodes<a class="headerlink" href="#object-nodes" title="Permalink to this headline">¶</a></h1>
+<p>Objects are without doubt the most ubiquitous containers of data in Blender. The storage and processes for generating data in objects are very incoherent:</p>
+<ul>
+<li><p class="first">Direct attributes: obmat, parenting, visibility, layers, BGE settings, ...</p>
+<p>(most ancient features)</p>
+</li>
+<li><p class="first">Optional pointers: Pose data, Proxy links, Sculpt data, Softbody, …</p>
+</li>
+<li><p class="first">Lists/Stacks: Modifiers, Constraints, Particle Systems, ...</p>
+</li>
+</ul>
+<p>Stack-based process descriptions are generally inflexible. While parts can be combined and reordered, the individual parts themselves are usually quite complex and hard-coded. Adding or extending functionality leads to “feature creep”: The only way to express new behavior is to add more buttons, and one ends up with overstuffed and incomprehensible panels. More features in turn cause incompatible settings and broken corner cases.</p>
+<p>Nodes promise to avoid these problems:</p>
+<ul class="simple">
+<li>Sockets and explicit connections allow reusing components beyond simple chains</li>
+<li>Node groups help to organize sets of nodes behind a custom interface</li>
+<li>Basic nodes can become small and concise, larger features work like node groups</li>
+<li>Artists can start with a clean slate or a minimal default setup, then just add what is needed</li>
+<li>Small-scale nodes enforce stateless code without side-effects</li>
+</ul>
+<div class="section" id="where-should-nodes-be-hooked-into-blender">
+<h2>Where should nodes be hooked into Blender?<a class="headerlink" href="#where-should-nodes-be-hooked-into-blender" title="Permalink to this headline">¶</a></h2>
+<p>Current nodes:</p>
+<ul class="simple">
+<li>shader/material nodes: used when the renderer calculates a surface/volume sample</li>
+<li>texture nodes: used when the renderer calculates a texture sample (integrated into shader nodes in Cycles!)</li>
+<li>compositing nodes: used when the render result is recalculated</li>
+</ul>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="caching.html" class="btn btn-neutral float-right" title="Unified caching API" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="pipeline.html" class="btn btn-neutral" title="Pipelines, Linking, Proxies, and Overrides" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Lukas Tönne.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'1.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>
