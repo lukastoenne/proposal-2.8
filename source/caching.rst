@@ -75,3 +75,57 @@ Cache export/import can be applied on a number of different levels, depending on
 1. Cache only object components: This is what Blender currently does for individual simulations or a mesh cache. Only the data of a specific component is replaced. No components are added or removed based on the cache file content. Can also be done for a whole object or scene, important thing is that only existing components are touched.
 2. Cache a complete Object: Allow the caching system to create/remove/replace components of the cached object, in addition to replacing their internal data. Can also be done for a whole scene, but only existing objects are modified when importing.
 3. Cache an entire scene: Allow creation of new objects as well as manipulating existing ones.
+
+Workflow Case Studies
+---------------------
+
+Mesh Component Caching
+======================
+
+We want to simplify lighting and rendering by using cached animation, instead of linking complex rigs and proxies. In this example only the mesh component is cached, while the rest of the object must be copied (appended) from the original.
+
+1) Setup node-based mesh animation pipeline: model->rig->proxify->animate
+
+   .. todo:: these steps should be described in object nodes section for general animation workflow
+
+   .. todo:: linking issues are ignored here, everything assumed to be local, no proxies needed!
+
+   a) Geometry (mesh) component is created by the user. (Geo component is by default initialized as the Mesh data block pointed to by ob->data)
+
+      .. image:: /images/placeholder.png
+
+   b) Armature node deforms the mesh using the Armature object + a pose component
+      [proxies would override this pose component, even though it is locked when using linked object]
+
+      .. image:: /images/placeholder.png
+
+   c) Animate!
+      [posing bones in pose mode changes pose component data (pose bone transforms), keyframes are stored in our object's animation data.]
+
+      .. image:: /images/placeholder.png
+
+2) "Export" node is appended after the armature deform node. Export button bakes the whole animation cache in one go for the relevant [defined how?] frame range.
+
+   .. note:: A special option "Only Deform" could be an export option to store only deformation layers (vertex offsets) of the mesh, without topology. Would make it essentially like current MMD/PC2 caches. Can break more easily if modifiers change the topology, these must be left intact when re-importing the cache. The overhead for storing static, non-deform mesh data once in the cache is probably negligable for typical scenarios, so a "only deform" option may not be necessary in practice.
+
+3) Lighting file: A new object must be created. This can either be created from scratch, or by appending the original object and then removing unused components (rig + pose).
+
+4) "Import Component" node can be used to load a specific component. The mesh component is plugged into the input and matching cache data is loaded from the cache file. The component data gets replaced, but the component has to exist beforehand.
+
+5) If only partial import of the mesh is desired (e.g. only deformations) the cached data should be merged with original data. A "Merge" node allows cherry-picking a few data layers and replacing the same layers in another mesh (compare: data transfer modifiers)
+
+Full Object Caching 1
+=====================
+
+Rather than loading just a single component, we can also just load the complete object from a cache.
+
+1) As before
+
+2) Export node supports multiple inputs. Any component plugged in will be stored in the cache.
+
+3) Lighting file: "Import" node is added, it looks much like a regular "Components" node. It provides all components stored in the object's cache. Unlike the "Import Component" node, the "Import" node does not require predefined components, but will create them as needed based on the cache file content.
+
+Full Object Caching 2
+=====================
+
+Rather than using object nodes to handle caching, the same could be done on a more traditional object UI level. Caches would be assigned in a panel and all components are imported. The "Components" object node then provides the imported cache content as if it was generated within Blender.
