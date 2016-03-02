@@ -14,10 +14,10 @@ Several distinct processes can be identified that have to work together for frac
 * Subdividing an existing mesh into smaller parts
 
   +----------------------------------------+----------------------------------------+
-  | .. figure:: /images/fracture_mesh1.png | .. figure:: /images/fracture_mesh4.png |
+  | .. image:: /images/fracture_mesh1.png  | .. image:: /images/fracture_mesh4.png  |
   |   :width: 100%                         |   :width: 100%                         |
   |                                        |                                        |
-  |   Fractured mesh                       |   Internally all shards are centered   |
+  | Fractured mesh                         | Internally all shards are centered     |
   |                                        |                                        |
   +----------------------------------------+----------------------------------------+
 

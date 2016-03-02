@@ -8,22 +8,22 @@ Typical rigger+animator workflow with proxies using the example of [simple chara
 [This should be as simple as possible: no hair/fur, simple rig (no spline ik), perhaps a non-character rig?]
 
 +-------------------------------------------------+-------------------------------------------------+
-| .. figure:: /images/placeholder.png             | .. figure:: /images/placeholder.png             |
+| .. image:: /images/placeholder.png              | .. image:: /images/placeholder.png              |
 |   :width: 100%                                  |   :width: 100%                                  |
 |                                                 |                                                 |
-|   \1. Base mesh                                 |   \2. Rigging                                   |
+| \1. Base mesh                                   | \2. Rigging                                     |
 |                                                 |                                                 |
 +-------------------------------------------------+-------------------------------------------------+
-| .. figure:: /images/placeholder.png             | .. figure:: /images/placeholder.png             |
+| .. image:: /images/placeholder.png              | .. image:: /images/placeholder.png              |
 |   :width: 100%                                  |   :width: 100%                                  |
 |                                                 |                                                 |
-|   \3. Linking mesh & rig                        |   \4. Linked pose is locked!                    |
+| \3. Linking mesh & rig                          | \4. Linked pose is locked!                      |
 |                                                 |                                                 |
 +-------------------------------------------------+-------------------------------------------------+
-| .. figure:: /images/placeholder.png             | .. figure:: /images/placeholder.png             |
+| .. image:: /images/placeholder.png              | .. image:: /images/placeholder.png              |
 |   :width: 100%                                  |   :width: 100%                                  |
 |                                                 |                                                 |
-|   \5. Proxy armature                            |   \6. Lighting/Render scene                     |
+| \5. Proxy armature                              | \6. Lighting/Render scene                       |
 |                                                 |                                                 |
 +-------------------------------------------------+-------------------------------------------------+
 
@@ -44,22 +44,22 @@ Simple non-dynamic hair setup as used for Coro, the main character in Caminandes
 --------------------------------------------------------------------------------
 
 +-------------------------------------------------+-------------------------------------------------+
-| .. figure:: /images/koro_modeling.png           | .. figure:: /images/koro_grooming.png           |
+| .. image:: /images/koro_modeling.png            | .. image:: /images/koro_grooming.png            |
 |   :width: 100%                                  |   :width: 100%                                  |
 |                                                 |                                                 |
-|   \1. Base mesh                                 |   \2. Grooming                                  |
+| \1. Base mesh                                   | \2. Grooming                                    |
 |                                                 |                                                 |
 +-------------------------------------------------+-------------------------------------------------+
-| .. figure:: /images/koro_rigging.png            | .. figure:: /images/koro_animation.png          |
+| .. image:: /images/koro_rigging.png             | .. image:: /images/koro_animation.png           |
 |   :width: 100%                                  |   :width: 100%                                  |
 |                                                 |                                                 |
-|   \3. Rigging                                   |   \4. Animation                                 |
+| \3. Rigging                                     | \4. Animation                                   |
 |                                                 |                                                 |
 +-------------------------------------------------+-------------------------------------------------+
-| .. figure:: /images/placeholder.png             | .. figure:: /images/placeholder.png             |
+| .. image:: /images/placeholder.png              | .. image:: /images/placeholder.png              |
 |   :width: 100%                                  |   :width: 100%                                  |
 |                                                 |                                                 |
-|   \5. Lighting                                  |   \6. Simulation                                |
+| \5. Lighting                                    | \6. Simulation                                  |
 |                                                 |                                                 |
 +-------------------------------------------------+-------------------------------------------------+
 
@@ -92,22 +92,22 @@ Animation Offsets for Simple Variation
 --------------------------------------
 
 +-------------------------------------------------+-------------------------------------------------+
-| .. figure:: /images/placeholder.png             | .. figure:: /images/placeholder.png             |
+| .. image:: /images/placeholder.png              | .. image:: /images/placeholder.png              |
 |   :width: 100%                                  |   :width: 100%                                  |
 |                                                 |                                                 |
-|   \1. Single Penguin                            |   \2. Identical Instances                       |
+| \1. Single Penguin                              | \2. Identical Instances                         |
 |                                                 |                                                 |
 +-------------------------------------------------+-------------------------------------------------+
-| .. figure:: /images/placeholder.png             | .. figure:: /images/placeholder.png             |
+| .. image:: /images/placeholder.png              | .. image:: /images/placeholder.png              |
 |   :width: 100%                                  |   :width: 100%                                  |
 |                                                 |                                                 |
-|   \3. Offset with NLA                           |   \4. Offset with Mesh Cache                    |
+| \3. Offset with NLA                             | \4. Offset with Mesh Cache                      |
 |                                                 |                                                 |
 +-------------------------------------------------+-------------------------------------------------+
-| .. figure:: /images/placeholder.png                                                               |
+| .. image:: /images/placeholder.png                                                                |
 |   :width: 100%                                                                                    |
 |                                                                                                   |
-|   \5. Final Crowd Shot                                                                            |
+| \5. Final Crowd Shot                                                                              |
 |                                                                                                   |
 +-------------------------------------------------+-------------------------------------------------+
 
@@ -125,16 +125,16 @@ Animation Variants [multiple sheep in tornado shot OR penguins in Caminandes 3]
 -------------------------------------------------------------------------------
 
 +-------------------------------------------------+-------------------------------------------------+
-| .. figure:: /images/placeholder.png                                                               |
+| .. image:: /images/placeholder.png                                                                |
 |   :width: 100%                                                                                    |
 |                                                                                                   |
-|   \1-3. Single Sheep                                                                              |
+| \1-3. Single Sheep                                                                                |
 |                                                                                                   |
 +-------------------------------------------------+-------------------------------------------------+
-| .. figure:: /images/placeholder.png             | .. figure:: /images/placeholder.png             |
+| .. image:: /images/placeholder.png              | .. image:: /images/placeholder.png              |
 |   :width: 100%                                  |   :width: 100%                                  |
 |                                                 |                                                 |
-|   \2. Single Proxy Limitation                   |   \3. Identical Hair Simulation                 |
+| \2. Single Proxy Limitation                     | \3. Identical Hair Simulation                   |
 |                                                 |                                                 |
 +-------------------------------------------------+-------------------------------------------------+
 
