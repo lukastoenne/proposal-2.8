@@ -37,10 +37,10 @@ from bpy.props import *
 from nodeitems_utils import NodeCategory, NodeItem
 from mathutils import *
 
-def enum_property_copy(bpy_type, name):
+def enum_property_copy(bpy_type, name, own_name=None):
     prop = bpy_type.bl_rna.properties[name]
     items = [(i.identifier, i.name, i.description, i.icon, i.value) for i in prop.enum_items]
-    return EnumProperty(name=prop.name,
+    return EnumProperty(name=own_name if own_name else prop.name,
                         description=prop.description,
                         default=prop.default,
                         items=items)
@@ -51,6 +51,19 @@ def enum_property_value_prop(name):
     return property(fget=fget)
 
 
+# XXX utility enum to fake an ID selection button
+bpy.types.Node.fake_id_ref = enum_property_copy(bpy.types.DriverTarget, "id_type", "Fake ID Ref")
+
+def DummyIDRefProperty(**kw):
+    return StringProperty(**kw)
+
+def draw_dummy_id_ref(layout, data, prop):
+    row = layout.row(align=True)
+    row.alignment = 'LEFT'
+    row.prop(data, "fake_id_ref", icon_only=True)
+    row.prop(data, prop, text="")
+
+
 ###############################################################################
 
 
@@ -58,6 +71,7 @@ def node_category_item(items):
     def deco(cls):
         item = NodeItem(nodetype=cls.bl_idname)
         items.append(item)
+        return cls
 
     return deco
 
@@ -212,15 +226,65 @@ class ObjectComponentSocket(NodeSocket):
 ###############################################################################
 
 
+# for manually adding dummy component outputs
+class AddComponent(Operator):
+    bl_idname = "object_nodes.add_component"
+    bl_label = "Add Component"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    name = StringProperty(
+            name="Name",
+            )
+
+    def execute(self, context):
+        node = context.active_node
+        if not node or not isinstance(node, ComponentsNode):
+            return {'CANCELLED'}
+        node.outputs.new('ObjectComponentSocket', self.name)
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_popup(self, event)
+
 @object_node_item('Mockups')
 class ComponentsNode(ObjectNodeBase, Node):
     '''Object data components'''
     bl_idname = 'ObjectComponentsNode'
     bl_label = 'Components'
 
+    def draw_buttons_ext(self, context, layout):
+        layout.operator("object_nodes.add_component")
+
     def init(self, context):
-        self.outputs.new('ObjectComponentSocket', "Particles")
-        self.outputs.new('ObjectComponentSocket', "Fracture Mesh")
+        # component outputs added manually for now
+        pass
+
+@object_node_item('Mockups')
+class ArmatureDeformNode(ObjectNodeBase, Node):
+    '''Deform a mesh with an armature pose'''
+    bl_idname = 'ArmatureDeformNode'
+    bl_label = 'Armature Deform'
+
+    armature = DummyIDRefProperty(name="Armature")
+
+    def draw_buttons(self, context, layout):
+        draw_dummy_id_ref(layout, self, "armature")
+
+    def init(self, context):
+        self.inputs.new('ObjectComponentSocket', "Mesh")
+        self.outputs.new('ObjectComponentSocket', "Mesh")
+
+@object_node_item('Mockups')
+class BoneConstraintsNode(ObjectNodeBase, Node):
+    '''System of bone constraints'''
+    bl_idname = 'BoneConstraintsNode'
+    bl_label = 'Bone Constraints'
+
+    def init(self, context):
+        self.inputs.new('ObjectComponentSocket', "Pose")
+        self.outputs.new('ObjectComponentSocket', "Pose")
+
+
 
 @object_node_item('Mockups')
 class ApplyIslandTransformsNode(ObjectNodeBase, Node):

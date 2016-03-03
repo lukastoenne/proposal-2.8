@@ -29,3 +29,43 @@ Current nodes:
 * shader/material nodes: used when the renderer calculates a surface/volume sample
 * texture nodes: used when the renderer calculates a texture sample (integrated into shader nodes in Cycles!)
 * compositing nodes: used when the render result is recalculated
+
+
+Workflow Case Studies
+---------------------
+
+.. _simple_animation_nodes:
+
+Simple Animation Workflow
+==========================
+
+.. note:: linking issues are ignored here, everything assumed to be local, no proxies needed!
+
+1. Geometry (mesh) component is default for mesh objects (or created by the user). Geo component is by default initialized as the Mesh data block pointed to by ob->data.
+
+.. figure:: /images/animation_workflow_base1.png
+ :width: 60%
+ :figclass: align-center
+
+2. Armature node deforms the mesh using the Armature object. The Armature object has pose component.
+   .. note:: Proxies would override this pose component, even though it is locked when using a linked object.
+
+.. figure:: /images/animation_workflow_base2.png
+ :width: 60%
+ :figclass: align-center
+
+3. Rigging workflow can also happen with nodes: The Armature object's "Pose" component contains a node network representing bone constraints.
+
+  .. todo:: It's unclear how this should work in detail. The 'Bone Constraints' node is like a group containing individual constraints.
+
+.. figure:: /images/animation_workflow_base3.png
+ :width: 60%
+ :figclass: align-center
+
+4. Animate!
+
+  Moving bones in pose mode changes pose bone transforms (in the "Pose" component). Keyframes are stored in the Armature object's animation data.
+
+.. figure:: /images/animation_workflow_base4.png
+ :width: 60%
+ :figclass: align-center

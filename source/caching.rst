@@ -86,23 +86,7 @@ We want to simplify lighting and rendering by using cached animation, instead of
 
 1) Setup node-based mesh animation pipeline: model->rig->proxify->animate
 
-   .. todo:: these steps should be described in object nodes section for general animation workflow
-
-   .. todo:: linking issues are ignored here, everything assumed to be local, no proxies needed!
-
-   a) Geometry (mesh) component is default for mesh objects (or created by the user). Geo component is by default initialized as the Mesh data block pointed to by ob->data.
-
-      .. image:: /images/placeholder.png
-
-   b) Armature node deforms the mesh using the Armature object + a pose component
-      [proxies would override this pose component, even though it is locked when using linked object]
-
-      .. image:: /images/placeholder.png
-
-   c) Animate!
-      [posing bones in pose mode changes pose component data (pose bone transforms), keyframes are stored in our object's animation data.]
-
-      .. image:: /images/placeholder.png
+  These steps are described in more detail in :ref:`simple_animation_nodes`.
 
 2) "Export" node is appended after the armature deform node. Export button bakes the whole animation cache in one go for the relevant [defined how?] frame range.
 
