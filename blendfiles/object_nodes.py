@@ -30,8 +30,7 @@ bl_info = {
     'category': 'Development'}
 
 
-import bpy
-import nodeitems_utils
+import bpy, nodeitems_utils, contextlib
 from bpy.types import Operator, NodeTree, Node, NodeSocket
 from bpy.props import *
 from nodeitems_utils import NodeCategory, NodeItem
@@ -164,8 +163,17 @@ class NodeTreeBase():
     pass
 
 class NodeBase():
-    pass
+    # XXX used to prevent reentrant updates due to RNA calls
+    # this should be fixed in future by avoiding low-level update recursion on the RNA side
+    is_updating = BoolProperty(options={'HIDDEN'})
 
+    @contextlib.contextmanager
+    def update_lock(self):
+        self.is_updating = True
+        try:
+            yield
+        finally:
+            self.is_updating = False
 
 ###############################################################################
 
@@ -212,24 +220,31 @@ class ObjectComponentSocket(NodeSocket):
     bl_idname = 'ObjectComponentSocket'
     bl_label = 'Component'
 
-    is_readonly = BoolProperty(name="Is Placeholder",
+    is_readonly = BoolProperty(name="Read Only",
                                default=False)
+    is_placeholder = BoolProperty(name="Is Placeholder",
+                                  default=False)
 
     def draw(self, context, layout, node, text):
         layout.label(text)
 
     def draw_color(self, context, node):
-        alpha = 0.4 if self.is_readonly else 1.0
+        if self.is_placeholder:
+            alpha = 0.0
+        elif self.is_readonly:
+            alpha = 0.4
+        else:
+            alpha = 1.0
         return (1.0, 0.4, 0.216, alpha)
 
 
 ###############################################################################
 
 
-# for manually adding dummy component outputs
-class AddComponent(Operator):
-    bl_idname = "object_nodes.add_component"
-    bl_label = "Add Component"
+# for manually adding dummy component inputs
+class AddComponentInput(Operator):
+    bl_idname = "object_nodes.add_component_input"
+    bl_label = "Add Component Input"
     bl_options = {'REGISTER', 'UNDO'}
 
     name = StringProperty(
@@ -237,14 +252,38 @@ class AddComponent(Operator):
             )
 
     def execute(self, context):
+        node = getattr(context, "node", None)
+        if not node or not isinstance(node, ObjectNodeBase):
+            return {'CANCELLED'}
+        node.inputs.new('ObjectComponentSocket', self.name)
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_popup(self, event)
+
+
+# for manually adding dummy component outputs
+class AddComponentOutput(Operator):
+    bl_idname = "object_nodes.add_component_output"
+    bl_label = "Add Component Output"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    name = StringProperty(
+            name="Name",
+            )
+
+    def execute(self, context):
+        # XXX doesn't work with popus #$*^@*#^%#$!!!
+        #node = getattr(context, "node", None)
         node = context.active_node
-        if not node or not isinstance(node, ComponentsNode):
+        if not node or not isinstance(node, ObjectNodeBase):
             return {'CANCELLED'}
         node.outputs.new('ObjectComponentSocket', self.name)
         return {'FINISHED'}
 
     def invoke(self, context, event):
         return context.window_manager.invoke_props_popup(self, event)
+
 
 @object_node_item('Mockups')
 class ComponentsNode(ObjectNodeBase, Node):
@@ -253,7 +292,8 @@ class ComponentsNode(ObjectNodeBase, Node):
     bl_label = 'Components'
 
     def draw_buttons_ext(self, context, layout):
-        layout.operator("object_nodes.add_component")
+        layout.context_pointer_set("node", self)
+        layout.operator("object_nodes.add_component_output")
 
     def init(self, context):
         # component outputs added manually for now
@@ -284,6 +324,81 @@ class BoneConstraintsNode(ObjectNodeBase, Node):
         self.inputs.new('ObjectComponentSocket', "Pose")
         self.outputs.new('ObjectComponentSocket', "Pose")
 
+
+
+@object_node_item('Mockups')
+class ExportComponentsNode(ObjectNodeBase, Node, DynamicSocketListNode):
+    '''Export object components to a cache file'''
+    bl_idname = 'ExportComponentsNode'
+    bl_label = 'Export Components'
+
+    cachefile = StringProperty(name="Cache File", subtype='FILE_PATH')
+
+    def draw_buttons(self, context, layout):
+        layout.prop(self, "cachefile")
+        # dummy operator button
+        layout.operator("render.render", text="Export")
+
+    def draw_buttons_ext(self, context, layout):
+        self.draw_buttons(context, layout)
+
+        layout.context_pointer_set("node", self)
+        layout.operator("object_nodes.add_component_input")
+
+    def init(self, context):
+        if self.is_updating:
+            return
+        with self.update_lock():
+            self.update_socket_list(self.inputs, 'ObjectComponentSocket')
+
+    def update(self):
+        if self.is_updating:
+            return
+        with self.update_lock():
+            self.update_socket_list(self.inputs, 'ObjectComponentSocket')
+
+    def insert_link(self, link):
+        if self.is_updating:
+            return
+        with self.update_lock():
+            self.update_socket_list(self.inputs, 'ObjectComponentSocket', insert=link.to_socket)
+
+@object_node_item('Mockups')
+class ImportSingleComponentNode(ObjectNodeBase, Node):
+    '''Import data for a single component from cache'''
+    bl_idname = 'ImportSingleComponent'
+    bl_label = 'Import Single Component'
+
+    cachefile = StringProperty(name="Cache File", subtype='FILE_PATH')
+
+    def draw_buttons(self, context, layout):
+        layout.prop(self, "cachefile")
+
+    def init(self, context):
+        self.inputs.new('ObjectComponentSocket', "Component")
+        self.outputs.new('ObjectComponentSocket', "Component")
+
+
+@object_node_item('Mockups')
+class ImportComponentsNode(ObjectNodeBase, Node):
+    '''Import object data components from a cache file'''
+    bl_idname = 'ImportComponentsNode'
+    bl_label = 'Import Components'
+
+    cachefile = StringProperty(name="Cache File", subtype='FILE_PATH')
+
+    def draw_buttons(self, context, layout):
+        layout.prop(self, "cachefile")
+
+    def draw_buttons_ext(self, context, layout):
+        self.draw_buttons(context, layout)
+
+        layout.context_pointer_set("node", self)
+        layout.operator("object_nodes.add_component_output")
+
+    def init(self, context):
+        # component outputs added manually for now
+        pass
 
 
 @object_node_item('Mockups')
