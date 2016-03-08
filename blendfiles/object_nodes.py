@@ -91,12 +91,7 @@ def object_node_item(cat_name):
 
 
 class DynamicSocketListNode:
-    def add_extender(self, socketlist, sockettype):
-        socket = socketlist.new(sockettype, "")
-        socket.is_placeholder = True
-        return socket
-
-    def update_socket_list(self, socketlist, sockettype, insert=None):
+    def update_socket_list(self, socketlist, insert=None):
         ntree = self.id_data
 
         # build map of connected inputs
@@ -114,8 +109,7 @@ class DynamicSocketListNode:
 
         # shift sockets to make room for a new link
         if insert is not None:
-            socketlist.new(sockettype, "")
-            nsocket = socketlist[-1]
+            nsocket = self.dynamic_socket_append(socketlist)
             for socket in reversed(socketlist[:-1]):
                 link, from_socket = input_links.get(socket, (None, None))
                 if link is not None:
@@ -125,35 +119,26 @@ class DynamicSocketListNode:
                 if socket == insert:
                     break
 
-        self.add_extender(socketlist, sockettype)
+        socket = self.dynamic_socket_append(socketlist)
+        socket.is_placeholder = True
 
-    def compile_socket_list(self, compiler, socketlist, passtype, jointype, valuetype):
-        ntree = self.id_data
+    def init(self, context):
+        if self.is_updating:
+            return
+        with self.update_lock():
+            self.update_socket_list(self.inputs)
 
-        # list of connected inputs
-        used_inputs = set()
-        for link in ntree.links:
-            if link.to_node == self:
-                used_inputs.add(link.to_socket)
-        # make a sorted index list
-        used_inputs = [ i for i,socket in enumerate(socketlist) if socket in used_inputs ]
+    def update(self):
+        if self.is_updating:
+            return
+        with self.update_lock():
+            self.update_socket_list(self.inputs)
 
-        if len(used_inputs) > 0:
-            node = compiler.add_node(passtype)
-            compiler.map_input(used_inputs[0], node.inputs[0])
-            result = node.outputs[0]
-        
-            for index in used_inputs[1:]:
-                node = compiler.add_node(jointype)
-                compiler.link(result, node.inputs[0])
-                compiler.map_input(index, node.inputs[1])
-                result = node.outputs[0]
-
-        else:
-            node = compiler.add_node(valuetype)
-            result = node.outputs[0]
-
-        return result
+    def insert_link(self, link):
+        if self.is_updating:
+            return
+        with self.update_lock():
+            self.update_socket_list(self.inputs, insert=link.to_socket)
 
 
 ###############################################################################
@@ -241,6 +226,22 @@ class ObjectComponentSocket(NodeSocket):
 ###############################################################################
 
 
+_component_types = [
+    ('MESH', 'Mesh', 'Mesh data', 'ObjectComponentSocket'),
+    ('VERTEX_LOC', 'Vertex Location', 'Vertex location data', 'NodeSocketVector'),
+    ]
+_component_items = [ (comp[0], comp[1], comp[2]) for comp in _component_types ]
+def make_component_sockets(socketlist, readonly, default):
+    for comp in _component_types:
+        socket = socketlist.new(comp[3], comp[1])
+        if hasattr(socket, "is_readonly"):
+            socket.is_readonly = readonly
+        socket.enabled = (comp[0] == default)
+def show_component_socket(socketlist, active):
+    for socket, comp in zip(socketlist, _component_types):
+        socket.enabled = (comp[0] == active)
+
+
 # for manually adding dummy component inputs
 class AddComponentInput(Operator):
     bl_idname = "object_nodes.add_component_input"
@@ -300,6 +301,28 @@ class ComponentsNode(ObjectNodeBase, Node):
         pass
 
 @object_node_item('Mockups')
+class RenderGeometryOutputNode(ObjectNodeBase, Node, DynamicSocketListNode):
+    '''Render geometry output'''
+    bl_idname = 'RenderGeometryOutputNode'
+    bl_label = 'Render Output'
+
+    def dynamic_socket_append(self, socketlist):
+        socket = socketlist.new("ObjectComponentSocket", "")
+        socket.is_readonly = True
+        return socket
+
+@object_node_item('Mockups')
+class ViewportGeometryOutputNode(ObjectNodeBase, Node, DynamicSocketListNode):
+    '''Viewport geometry output'''
+    bl_idname = 'ViewportGeometryOutputNode'
+    bl_label = 'Viewport Output'
+
+    def dynamic_socket_append(self, socketlist):
+        socket = socketlist.new("ObjectComponentSocket", "")
+        socket.is_readonly = True
+        return socket
+
+@object_node_item('Mockups')
 class ArmatureDeformNode(ObjectNodeBase, Node):
     '''Deform a mesh with an armature pose'''
     bl_idname = 'ArmatureDeformNode'
@@ -324,8 +347,6 @@ class BoneConstraintsNode(ObjectNodeBase, Node):
         self.inputs.new('ObjectComponentSocket', "Pose")
         self.outputs.new('ObjectComponentSocket', "Pose")
 
-
-
 @object_node_item('Mockups')
 class ExportComponentsNode(ObjectNodeBase, Node, DynamicSocketListNode):
     '''Export object components to a cache file'''
@@ -345,39 +366,25 @@ class ExportComponentsNode(ObjectNodeBase, Node, DynamicSocketListNode):
         layout.context_pointer_set("node", self)
         layout.operator("object_nodes.add_component_input")
 
-    def init(self, context):
-        if self.is_updating:
-            return
-        with self.update_lock():
-            self.update_socket_list(self.inputs, 'ObjectComponentSocket')
+    def dynamic_socket_append(self, socketlist):
+        socket = socketlist.new("ObjectComponentSocket", "")
+        socket.is_readonly = True
+        return socket
 
-    def update(self):
-        if self.is_updating:
-            return
-        with self.update_lock():
-            self.update_socket_list(self.inputs, 'ObjectComponentSocket')
+# @object_node_item('Mockups')
+# class ImportSingleComponentNode(ObjectNodeBase, Node):
+#     '''Import data for a single component from cache'''
+#     bl_idname = 'ImportSingleComponent'
+#     bl_label = 'Import Single Component'
 
-    def insert_link(self, link):
-        if self.is_updating:
-            return
-        with self.update_lock():
-            self.update_socket_list(self.inputs, 'ObjectComponentSocket', insert=link.to_socket)
+#     cachefile = StringProperty(name="Cache File", subtype='FILE_PATH')
 
-@object_node_item('Mockups')
-class ImportSingleComponentNode(ObjectNodeBase, Node):
-    '''Import data for a single component from cache'''
-    bl_idname = 'ImportSingleComponent'
-    bl_label = 'Import Single Component'
+#     def draw_buttons(self, context, layout):
+#         layout.prop(self, "cachefile")
 
-    cachefile = StringProperty(name="Cache File", subtype='FILE_PATH')
-
-    def draw_buttons(self, context, layout):
-        layout.prop(self, "cachefile")
-
-    def init(self, context):
-        self.inputs.new('ObjectComponentSocket', "Component")
-        self.outputs.new('ObjectComponentSocket', "Component")
-
+#     def init(self, context):
+#         self.inputs.new('ObjectComponentSocket', "Component")
+#         self.outputs.new('ObjectComponentSocket', "Component")
 
 @object_node_item('Mockups')
 class ImportComponentsNode(ObjectNodeBase, Node):
@@ -399,7 +406,6 @@ class ImportComponentsNode(ObjectNodeBase, Node):
     def init(self, context):
         # component outputs added manually for now
         pass
-
 
 @object_node_item('Mockups')
 class ApplyIslandTransformsNode(ObjectNodeBase, Node):

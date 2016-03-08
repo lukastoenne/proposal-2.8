@@ -21,14 +21,12 @@ Nodes promise to avoid these problems:
 * Artists can start with a clean slate or a minimal default setup, then just add what is needed
 * Small-scale nodes enforce stateless code without side-effects
 
-Where should nodes be hooked into Blender?
-------------------------------------------
+Components
+----------
 
-Current nodes:
+To describe common features of data in objects, "components" are introduced. An object component is
 
-* shader/material nodes: used when the renderer calculates a surface/volume sample
-* texture nodes: used when the renderer calculates a texture sample (integrated into shader nodes in Cycles!)
-* compositing nodes: used when the render result is recalculated
+* optional:
 
 
 Workflow Case Studies
@@ -41,13 +39,13 @@ Simple Animation Workflow
 
 .. note:: linking issues are ignored here, everything assumed to be local, no proxies needed!
 
-1. Geometry (mesh) component is default for mesh objects (or created by the user). Geo component is by default initialized as the Mesh data block pointed to by ob->data.
+1. By default the mesh component (``Mesh`` object data block) is used as render output directly.
 
 .. figure:: /images/animation_workflow_base1.png
  :width: 60%
  :figclass: align-center
 
-2. Armature node deforms the mesh using the Armature object. The Armature object has pose component.
+2. Armature node deforms the mesh using the Armature object. The Armature object has a pose component. Note that the armature object is not connected to a render node or viewport node, so it will just display bone poses by default.
    .. note:: Proxies would override this pose component, even though it is locked when using a linked object.
 
 .. figure:: /images/animation_workflow_base2.png

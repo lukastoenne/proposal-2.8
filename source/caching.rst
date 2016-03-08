@@ -96,31 +96,22 @@ We want to simplify lighting and rendering by using cached animation, instead of
 
    .. note:: A special option "Only Deform" could be an export option to store only deformation layers (vertex offsets) of the mesh, without topology. Would make it essentially like current MMD/PC2 caches. Can break more easily if modifiers change the topology, such modifiers must be left intact when re-importing the cache. The overhead for storing full mesh data once is probably negligable for typical scenarios, so a "only deform" option may not be necessary in practice.
 
-3) Lighting file: A new object must be created to load the cached animation. Two possible methods:
-   
-   a) append the original object and then remove unused components (rig + pose)
-   b) create a simple new object from scratch (everything will be loaded from the cache)
-
-   +---------------------------------------------------+---------------------------------------------------+
-   | .. image:: /images/caching_workflow_newscene1.png | .. image:: /images/caching_workflow_newscene2.png |
-   |   :width: 100%                                    |   :width: 100%                                    |
-   |                                                   |                                                   |
-   | | \a. New file can start by appending the full    | | \b. Alternatively start with a plain object and |
-   | | asset, then remove the rig.                     | | load all components from the cache              |
-   |                                                   |                                                   |
-   +---------------------------------------------------+---------------------------------------------------+
-
-4) "Import Single Component" node can be used to load a specific component. The mesh component is plugged into the input and matching cache data is loaded from the cache file. The component data gets replaced, but the component has to exist beforehand.
+3) Lighting file: The cached mesh data can be imported into a mesh object now. The "Import Components" node loads all available components from the cache file and presents them as sockets. It is similar to a regular "Components" node but uses the cached data instead of local object components.
 
    .. figure:: /images/caching_workflow_importmesh1.png
      :width: 60%
      :figclass: align-center
 
-.. todo::
-   5) If only partial import of the mesh is desired (e.g. only deformations) the cached data should be merged with original data. A "Merge" node allows cherry-picking a few data layers and replacing the same layers in another mesh (compare: data transfer modifiers)
+4) Cached data can be applied partially to the base mesh, for example if only deformation is wanted.
 
-Full Object Export/Import 1
-===========================
+   .. figure:: /images/caching_workflow_importmesh2.png
+     :width: 60%
+     :figclass: align-center
+
+   .. note:: Such transfer of attributes between meshes expects matching topology and can otherwise create a garbled mesh. Because this process is non-desctructive, the consequences are minimal.
+
+Full Object Export/Import
+=========================
 
 Rather than loading just a single component, we can also just load the complete object from a cache.
 
@@ -134,13 +125,8 @@ Rather than loading just a single component, we can also just load the complete 
      :width: 60%
      :figclass: align-center
 
-3) Lighting file: "Import Components" node is added, it looks much like a regular "Components" node. It provides all components stored in the object's cache. Unlike the "Import Single Component" node, it does not require predefined components, but will create them as needed based on the cache file content.
+3) Lighting file: "Import Components" node is added. It provides all components stored in the object's cache.
 
    .. figure:: /images/caching_workflow_fullimport_nodes.png
      :width: 60%
      :figclass: align-center
-
-Full Object Export/Import 2
-===========================
-
-Rather than using object nodes to handle caching, the same could be done on a more traditional object UI level. Caches would be assigned in a panel and all components are imported. The "Components" object node then provides the imported cache content as if it was generated within Blender.
