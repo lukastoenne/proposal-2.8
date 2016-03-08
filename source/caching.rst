@@ -130,3 +130,39 @@ Rather than loading just a single component, we can also just load the complete 
    .. figure:: /images/caching_workflow_fullimport_nodes.png
      :width: 60%
      :figclass: align-center
+
+Caching: Export + Import with a single node
+===========================================
+
+Export and Import node can be combined into a single node. The cache is then an intermediate step, within a single workflow stage.
+
+Initially, when no cache file exists yet, the node will do nothing and simply pass through data from the input.
+
+Once the cache is exported the "Cache Components" node functions like an "Import Components" node. All the input node branches are then skipped and the cached data is used instead.
+
+   .. figure:: /images/caching_workflow_roundtrip.png
+     :width: 60%
+     :figclass: align-center
+
+Multi-stage caches
+==================
+
+Multiple caches can be used at various points in a complex object pipeline. For instance, in addition to the animation cache there can be a simulation cache for hair or cloth. Using cached data rather than the complete set of objects, rigs, proxies and helpers can greatly simplify the workflow for complex characters.
+
+.. figure:: /images/caching_workflow_multistage_anim.png
+  :width: 70%
+  :figclass: align-center
+
+  \1. Animation: Mesh deformation is stored in a cache file
+
+.. figure:: /images/caching_workflow_multistage_hairsim.png
+  :width: 70%
+  :figclass: align-center
+
+  \2. Hair Simulation: Animation cache is used as basis for hair motion
+
+.. figure:: /images/caching_workflow_multistage_lighting.png
+  :width: 70%
+  :figclass: align-center
+
+  \3. Lighting: Combined animation and simulation cache for rendering

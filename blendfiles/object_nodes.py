@@ -360,31 +360,10 @@ class ExportComponentsNode(ObjectNodeBase, Node, DynamicSocketListNode):
         # dummy operator button
         layout.operator("render.render", text="Export")
 
-    def draw_buttons_ext(self, context, layout):
-        self.draw_buttons(context, layout)
-
-        layout.context_pointer_set("node", self)
-        layout.operator("object_nodes.add_component_input")
-
     def dynamic_socket_append(self, socketlist):
         socket = socketlist.new("ObjectComponentSocket", "")
         socket.is_readonly = True
         return socket
-
-# @object_node_item('Mockups')
-# class ImportSingleComponentNode(ObjectNodeBase, Node):
-#     '''Import data for a single component from cache'''
-#     bl_idname = 'ImportSingleComponent'
-#     bl_label = 'Import Single Component'
-
-#     cachefile = StringProperty(name="Cache File", subtype='FILE_PATH')
-
-#     def draw_buttons(self, context, layout):
-#         layout.prop(self, "cachefile")
-
-#     def init(self, context):
-#         self.inputs.new('ObjectComponentSocket', "Component")
-#         self.outputs.new('ObjectComponentSocket', "Component")
 
 @object_node_item('Mockups')
 class ImportComponentsNode(ObjectNodeBase, Node):
@@ -406,6 +385,40 @@ class ImportComponentsNode(ObjectNodeBase, Node):
     def init(self, context):
         # component outputs added manually for now
         pass
+
+@object_node_item('Mockups')
+class CacheComponentsNode(ObjectNodeBase, Node, DynamicSocketListNode):
+    '''Cache object data components in a file'''
+    bl_idname = 'CacheComponentsNode'
+    bl_label = 'Cache Components'
+
+    cachefile = StringProperty(name="Cache File", subtype='FILE_PATH')
+
+    def draw_buttons(self, context, layout):
+        layout.prop(self, "cachefile")
+        # dummy operator button
+        layout.operator("render.render", text="Export")
+
+    def draw_buttons_ext(self, context, layout):
+        self.draw_buttons(context, layout)
+
+        layout.context_pointer_set("node", self)
+        layout.operator("object_nodes.add_component_output")
+
+    def dynamic_socket_append(self, socketlist):
+        socket = socketlist.new("ObjectComponentSocket", "")
+        return socket
+
+
+@object_node_item('Mockups')
+class HairSimNode(ObjectNodeBase, Node):
+    '''Hair simulation'''
+    bl_idname = 'HairSimNode'
+    bl_label = 'Hair Simulation'
+
+    def init(self, context):
+        self.inputs.new('ObjectComponentSocket', "Hair")
+        self.outputs.new('ObjectComponentSocket', "Hair")
 
 @object_node_item('Mockups')
 class ApplyIslandTransformsNode(ObjectNodeBase, Node):
