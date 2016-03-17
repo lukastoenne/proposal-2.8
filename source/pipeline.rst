@@ -84,8 +84,10 @@ Serious trouble ensues because of linked objects after animation.
    "Steps 1-4 happen as before: model, groom, rig, animate, and setup the complete render scene.”
 
 5. "Simulation specialist Simon now has to simulate motion of Harry's hair strands. Long hair has to move in the wind and collide with the character's body. But Simon has a problem similar to the one Annie had before: the object with the hair system is linked and he cannot add or tweak a simulation on it[2]. Simon has a few options now:
+
    1. He can make the whole mesh object local in his file. Then he could modify the simulation settings, but any changes by Molly to her model would not end up in his file any more. He would have to painstakingly merge .blend files every time this happens, which is why linking was implemented in the first place!
    2. He can directly edit Molly's model file where the hair system is local. But this is dangerous because his changes would conflict with potential changes by Molly (it just moves the burden of merging changes back to Molly). He also still has to bake the simulation in his own file so that Annie’s animation is used correctly for hair physics.”
+
 6. “Now Lisa has to import the object with simulated hair from Simon. Assuming Simon made a local object copy to avoid the linking issues, Lisa then has to link Simon’s rather than Ricky’s object.”
 
 Animation Offsets for Simple Variation

@@ -20,6 +20,7 @@ Contents:
    pipeline.rst
    object_nodes.rst
    caching.rst
+   particles.rst
    fracture.rst
    todo.rst
 

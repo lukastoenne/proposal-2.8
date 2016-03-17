@@ -1,3 +1,5 @@
+.. _fracture_simulation:
+
 ***************************************
 Fracture Simulation Workflow with Nodes
 ***************************************
