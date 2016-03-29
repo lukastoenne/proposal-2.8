@@ -21,6 +21,30 @@ Nodes promise to avoid these problems:
 * Artists can start with a clean slate or a minimal default setup, then just add what is needed
 * Small-scale nodes enforce stateless code without side-effects
 
+Components
+----------
+
+Many modifiers currently store various kinds of persistent data, for example particle state, voxel data, or mesh binding weights. The mingling of data and processing here makes it difficult to reuse modifier setups, because the data stored in them is specific to just one object.
+
+Nodes are already maintained in a separate datablock ("Node Tree" ID datablocks). So using nodes instead of stacks for processing object data implies separating them from the data. Nodes themselves should be state-less (not store persistent data), so that they can be used in multiple contexts. All the data they work on is provided by input arguments.
+
+That leaves objects with largely "passive" data storage, tentatively called "components" to avoid confusion. Components can be regarded as the data part of modifiers.
+
+.. todo:: access to components in nodes, separate data storage into "scene database"/cache/renderer -> components are just formal descriptors
+
+User Choice: Nodes vs. Stacks
+-----------------------------
+
+For simple workflows and for the sake of familiarity, the use of traditional modifier- or constraint stacks may be preferable. To make the transition as smooth as possible, most existing object functionality could be supported both ways. This is comparable to how shaders have a ``Use Nodes`` option already, which toggles between a simple setup from panel buttons and a fully-fledged node setup.
+
+For object nodes the combination of nodes and a classic button UI is more involved, because of the multitude of different features affected. A complete and detailed solution is out of scope in this proposal, but a rough sketch shall be attempted.
+
+.. todo:: nodes as part of stacks vs. stacks as part of nodes, depsgraph as framework
+
+
+Workflow Case Studies
+---------------------
+
 .. note:: The workflow case studies in this proposal usually focus on high-level node setups for typical basic tasks. Most of the nodes in these examples would be composites of smaller building blocks. That means a user can make a new variant of a feature by using them like node groups:
 
    1. copy the node type (like copying the group datablock, rather than a single node)
@@ -28,17 +52,6 @@ Nodes promise to avoid these problems:
    3. tweak the input/output sockets if necessary
 
    This gives a great deal of flexibility without the need to pre-define each and every potential use case. Blender would provide the basic presets as described here, and these can be sufficient as-is in many cases. But extending the range of node types for specialized purposes should be a perfectly acceptable way of using nodes (compared to the cumbersome node group management we have now).
-
-Components
-----------
-
-To describe common features of data in objects, "components" are introduced. An object component is
-
-* optional:
-
-
-Workflow Case Studies
----------------------
 
 .. _simple_animation_nodes:
 

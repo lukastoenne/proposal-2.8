@@ -85,48 +85,130 @@ Extra Topology Elements
 Workflow Examples: Emitting Particles
 -------------------------------------
 
-Plain Particles at a specific frame
-===================================
+Generate Plain Particles
+========================
 
-1. Create Particle Component + node tree
-2. Node "Create Particles": simple way to add N particles on a specific frame
 
-Emitting particles over time
-============================
+.. figure:: /images/particles_create_component.png
+  :width: 60%
+  :figclass: align-center
+  
+  \1. Create Particle component.
 
-1. Node "Emit Particles" creates particles over time.
-2. Emission rate can either be a variable emission rate or emit a total amount.
+.. figure:: /images/particles_creating1.png
+  :width: 60%
+  :figclass: align-center
 
-Combining existing and newly emitted particles
-==============================================
+  \2. In object nodes, the output node defines the particle state after an update. If nothing is plugged into the output, the particle state remains unchanged.
 
-1. Output of basic emitter nodes contains only particles created in that particular frame
-2. New particles can be joined with existing particles to form the next particle state
-3. Joined particle sets can also be handled in the same frame right after creating new particles, if needed. For instance, one may want to adjust new particles' positions to achieve a uniform density at all times at the end of each update.
+  .. todo How to associate the output node with the right particle component? This could happen in a node group dedicated to the component, to define context.
+
+.. figure:: /images/particles_creating2.png
+  :width: 60%
+  :figclass: align-center
+
+  \3. "Create Particles" node by default creates a number of particles over a frame range.
+
+.. figure:: /images/particles_creating3.png
+  :width: 60%
+  :figclass: align-center
+
+  \4. A variable frame rate can be used to further control emission. Note that the total number of particles created is still the same and the actual rate is normalized (integration of the fcurve).
+
+.. figure:: /images/particles_creating4.png
+  :width: 60%
+  :figclass: align-center
+
+  \5. Emission rate can also be used directly as particles-per-frame, if the total amount is left unspecified. Note that controlling the total amount of particles is more difficult this way.
 
 Initializing new particles
 ==========================
 
-1. Emitter node output contains default particles: all positions are ``(0, 0, 0)``.
-2. Assign a random position on the unit sphere to each new particle, using the particle index as a seed value.
-3. Other particle attributes may be initialized in a similar manner, using the "Set Attribute" node.
+
+.. figure:: /images/particles_init1.png
+  :width: 60%
+  :figclass: align-center
+
+  \1. Emitter node output contains default particles: all positions are ``(0, 0, 0)``.
+
+.. figure:: /images/particles_init2.png
+  :width: 60%
+  :figclass: align-center
+
+  \2. Assign a random position on the unit sphere to each new particle, using the particle index as a seed value.
+
+.. figure:: /images/particles_init3.png
+  :width: 60%
+  :figclass: align-center
+
+  \3. Other particle attributes may be initialized in a similar manner, using the "Set Attribute" node.
+
+Combining and Splitting Particle Sets
+=====================================
+
+.. figure:: /images/particles_joinsplit1.png
+  :width: 60%
+  :figclass: align-center
+
+  \1. Output of basic emitter nodes contains only particles created in that particular frame
+
+.. figure:: /images/particles_joinsplit2.png
+  :width: 60%
+  :figclass: align-center
+
+  \2. Existing particles can be modified by using a "Particles" input node. Note that modifying these particles only has an effect if the result is actually plugged into the output node!
+
+.. note:: Using "Particles" input multiple times creates some ambiguity: then there are multiple sets of particles with the same indices (i.e. "same particles"). Modifications to the particle state then depend on the order in which these are plugged into the output node. Would be nice to solve this, but could also work alright this way if users are aware of it.
+
+.. figure:: /images/particles_joinsplit3.png
+  :width: 60%
+  :figclass: align-center
+
+  \3. Joining old particles with the emitter node output yields the complete set of existing particles, which can then be modified further.
+
+.. figure:: /images/particles_joinsplit4.png
+  :width: 60%
+  :figclass: align-center
+
+  \4. Particle sets can also be split into separate sets. Each particle is placed in an output set based on a condition.
+
+.. note:: "Filtering" could be a general mechnism, whereby nodes first split particles, modify one of the branches, and then rejoin the two branches.
 
 Distributing particles on a mesh surface
 ========================================
 
-1. Random samples on a mesh surface can be created with a "Sample Mesh Surface" node. Again, the particle index serves as a seed value to create a unique value for each particle.
-2. Relation of particles to mesh vertices stored as a particle attribute! This allows particles to "track" a mesh surface when it gets deformed, for example.
-3. The particle positions can be continually updated by re-evaluating the stored mesh surface samples. Other useful techniques could be texture or normals interpolation.
+.. figure:: /images/particles_meshsurface1.png
+  :width: 60%
+  :figclass: align-center
+
+  \1. Random samples on a mesh surface can be created with a "Sample Mesh Surface" node. Again, the particle index serves as a seed value to create a unique value for each particle.
+
+.. figure:: /images/particles_meshsurface2.png
+  :width: 60%
+  :figclass: align-center
+
+  \2 Vertex weights can be stored as a particle attribute.
+
+.. figure:: /images/particles_meshsurface3.png
+  :width: 60%
+  :figclass: align-center
+
+  \3. This way particles can "track" a deforming mesh surface. The particle positions can be continually updated by re-evaluating the stored mesh surface samples. Other useful techniques could be texture or normals interpolation.
 
 Distributing particles in a volume
 ==================================
 
-1. Similar to mesh surfaces, a volume (like a smoke density grid) can be sampled as well.
-2. Samples inside a volume are not as meaningful as surface samples. Tracking positions a volume is more ambiguous than tracking a mesh surface and requires support by a physics solver system. See `Workflow Examples: Simulating Particles`_ for examples.
+.. figure:: /images/particles_volume1.png
+  :width: 60%
+  :figclass: align-center
 
-.. note:: Tracking mesh surfaces is easy because the surface is *defined* by the vertices. Every point on the surface is a linear combination of vertex position vectors (or other attributes), so all we need to do to reconstruct a point on a deformed surface is to store the weights per vertex.
+  \1. Similar to mesh surfaces, a volume (like a smoke density grid) can be sampled as well.
+
+.. note:: Samples inside a volume don't come with weights like surface samples. Tracking positions a volume is more ambiguous than tracking a mesh surface and requires support by a physics solver system. See `Workflow Examples: Simulating Particles`_ for examples.
+
+  Tracking mesh surfaces is easy because the surface is *defined* by the vertices. Every point on the surface is a linear combination of vertex position vectors (or other attributes), so all we need to do to reconstruct a point on a deformed surface is to store the weights per vertex.
    
-   Most volumes don't have a linearization equivalent to mesh surfaces, so there is no direct mapping to a "deformed" volume. Volumetric simulations use integrators to advect particles through a gradient field iteratively.
+  Most volumes don't have a linearization equivalent to mesh surfaces, so there is no direct mapping to a "deformed" volume. Volumetric simulations use integrators to advect particles through a gradient field iteratively.
 
 
 Workflow Examples: Rendering Particles
@@ -199,8 +281,16 @@ Modern fluid VFX in movie productions and the like is almost exclusively of a "l
 .. note:: Smoothed Particle Hydrodynamics (SPH) is not very useful for simulation purposes in CG. The computational cost is far too great compared to modern lagrangian methods such as FLIP. In it's current implementation in Blender it also tends to become unstable quickly. It should therefore be considered of only theoretical interest.
 
 
-Workflow Examples: Editing Particles
-------------------------------------
+Workflow Examples: Events
+-------------------------
+
+Limiting Particle Lifetime
+==========================
+
+Deleting Particles on Collision
+===============================
+
+
 
 .. todo:: Here could be some cases of editing a single particle state as well as potential cache editing features.
 

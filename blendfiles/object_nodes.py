@@ -31,7 +31,7 @@ bl_info = {
 
 
 import bpy, nodeitems_utils, contextlib
-from bpy.types import Operator, NodeTree, Node, NodeSocket
+from bpy.types import Operator, NodeTree, Node, NodeSocket, PropertyGroup, Panel, UIList
 from bpy.props import *
 from nodeitems_utils import NodeCategory, NodeItem
 from mathutils import *
@@ -225,21 +225,180 @@ class ObjectComponentSocket(NodeSocket):
 
 ###############################################################################
 
-
+# general-purpose list of component types and various associated strings:
+# identifier, UI name, description, socket type, icon, default name
 _component_types = [
-    ('MESH', 'Mesh', 'Mesh data', 'ObjectComponentSocket'),
-    ('VERTEX_LOC', 'Vertex Location', 'Vertex location data', 'NodeSocketVector'),
+    ('MESH', 'Mesh', 'Mesh data', 'ObjectComponentSocket', 'MESH_DATA', "Mesh"),
+    ('FRACMESH', 'Fracture Mesh', 'Mesh with shard data', 'ObjectComponentSocket', 'MOD_TRIANGULATE', "FracMesh"),
+    ('PARTICLES', 'Particles', 'Point data', 'ObjectComponentSocket', 'PARTICLE_DATA', "Particles"),
+    ('POSE', 'Pose', 'Bone transformations pose', 'ObjectComponentSocket', 'POSE_DATA', "Pose"),
     ]
-_component_items = [ (comp[0], comp[1], comp[2]) for comp in _component_types ]
-def make_component_sockets(socketlist, readonly, default):
-    for comp in _component_types:
-        socket = socketlist.new(comp[3], comp[1])
-        if hasattr(socket, "is_readonly"):
-            socket.is_readonly = readonly
-        socket.enabled = (comp[0] == default)
-def show_component_socket(socketlist, active):
-    for socket, comp in zip(socketlist, _component_types):
-        socket.enabled = (comp[0] == active)
+_component_types_set = { comp[0] for comp in _component_types }
+_component_items = [ (comp[0], comp[1], comp[2], comp[4], i) for i, comp in enumerate(_component_types) ]
+_component_icon = { comp[0] : comp[4] for comp in _component_types }
+_component_default_name = { comp[0] : comp[5] for comp in _component_types }
+class ObjectComponent(PropertyGroup):
+    type = EnumProperty(name="Type",
+                        description="Type of the component",
+                        items=_component_items,
+                        default='MESH',
+                        )
+def components_new(self, type, name):
+    assert(type in _component_types_set)
+
+    c = self.components.add()
+    c.type = type
+    if name:
+        c.name = name
+    else:
+        c.name = _component_default_name[type]
+
+class ObjectComponentSettings(PropertyGroup):
+    space_type = EnumProperty(name="Space Type",
+                              items=[('BUTS', "Properties", "", 'BUTS', 0)],
+                              )
+
+    def _context_type_items(self, context):
+        items_base = [
+        ("SCENE", "Scene", "Scene", 'SCENE_DATA', 0),
+        ("RENDER", "Render", "Render", 'SCENE', 1),
+        ("RENDER_LAYER", "Render Layers", "Render layers", 'RENDERLAYERS', 2),
+        ("WORLD", "World", "World", 'WORLD', 3),
+        ("OBJECT", "Object", "Object", 'OBJECT_DATA', 4),
+        #("CONSTRAINT", "Constraints", "Object constraints", 'CONSTRAINT', 5),
+        #("MODIFIER", "Modifiers", "Object modifiers", 'MODIFIER', 6),
+        ("COMPONENTS", "Components", "Object data components", 'MOD_BUILD', 999),
+        ("DATA", "Data", "Object data", 'MESH_DATA', 7),
+        #("BONE", "Bone", "Bone", 'BONE_DATA', 8),
+        #("BONE_CONSTRAINT", "Bone Constraints", "Bone constraints", 'CONSTRAINT_BONE', 9),
+        ("MATERIAL", "Material", "Material", 'MATERIAL', 10),
+        ("TEXTURE", "Texture", "Texture", 'TEXTURE', 11),
+        #("PARTICLES", "Particles", "Particle", 'PARTICLES', 12),
+        #("PHYSICS", "Physics", "Physics", 'PHYSICS', 13),
+        ]
+        return items_base
+    context_type = EnumProperty(name="Context Type",
+                                items=_context_type_items,
+                                )
+def register_object_components():
+    Object = bpy.types.Object
+    Object.component_settings = PointerProperty(type=ObjectComponentSettings)
+    Object.components = CollectionProperty(type=ObjectComponent)
+    Object.active_component = IntProperty(name="Active Component")
+    Object.components_new = components_new
+
+def unregister_object_components():
+    Object = bpy.types.Object
+    del Object.component_settings
+    del Object.components
+    del Object.active_component
+
+class OBJECT_OT_add_component(Operator):
+    """Add a data component to an object"""
+    bl_idname = "object.add_component"
+    bl_label = "Add Component"
+
+    name = StringProperty(name="Name",
+                          description="Name of the component",
+                          )
+    type = EnumProperty(name="Type",
+                        description="Component Type",
+                        items=_component_items,
+                        )
+
+    @classmethod
+    def poll(cls, context):
+        return context.object is not None
+
+    def execute(self, context):
+        ob = context.object
+        ob.components_new(self.type, self.name)
+        return {'FINISHED'}
+
+class OBJECT_OT_remove_component(Operator):
+    """Remove the active data component from an object"""
+    bl_idname = "object.remove_component"
+    bl_label = "Remove Component"
+
+    @classmethod
+    def poll(cls, context):
+        return context.object is not None
+
+    def execute(self, context):
+        ob = context.object
+        ob.components.remove(ob.active_component)
+        return {'FINISHED'}
+
+class OBJECT_OT_move_component(Operator):
+    """Move the active data component up or down"""
+    bl_idname = "object.move_component"
+    bl_label = "Move Component"
+
+    direction = EnumProperty(name="Direction", items=[('UP', "Up", ""), ('DOWN', "Down", "")])
+
+    @classmethod
+    def poll(cls, context):
+        return context.object is not None
+
+    def execute(self, context):
+        ob = context.object
+        index = ob.active_component
+        if self.direction == 'UP':
+            index = max(ob.active_component - 1, 0)
+        else:
+            index = min(ob.active_component + 1, len(ob.components) - 1)
+        ob.components.move(ob.active_component, index)
+        ob.active_component = index
+        return {'FINISHED'}
+
+class OBJECT_UL_components(UIList):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index, flt_flag):
+        if self.layout_type in {'DEFAULT', 'COMPACT'}:
+            row = layout.row()
+            row.alignment = 'LEFT'
+            row.label(text="", icon=_component_icon[item.type])
+            row.prop(item, "name", text="", emboss=False)
+        elif self.layout_type in {'GRID'}:
+            layout.label(text="", icon_value=icon)
+
+class FakeSpaceProperties(Panel):
+    bl_label = "Fake Properties"
+    bl_idname = "PROPERTIES_PT_fake_buttons"
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    #bl_context = "scene"
+
+    def draw(self, context):
+        layout = self.layout
+        ob = context.object
+        if not ob:
+            return
+
+        # fake button space header
+        row = layout.row()
+        row.alignment = 'LEFT'
+        row.prop(ob.component_settings, "space_type", icon_only=True)
+        row.prop(ob.component_settings, "context_type", expand=True, icon_only=True)
+
+        layout.separator()
+
+        row = layout.row()
+        
+        col = row.column()
+        col.template_list("OBJECT_UL_components", "", ob, "components", ob, "active_component")
+        
+        col = row.column()
+        col2 = col.column(align=True)
+        col2.operator_menu_enum("object.add_component", "type", text="", icon='ZOOMIN')
+        col2.operator("object.remove_component", text="", icon='ZOOMOUT')
+        col2 = col.column(align=True)
+        props = col2.operator("object.move_component", text="", icon='TRIA_UP')
+        props.direction = 'UP'
+        props = col2.operator("object.move_component", text="", icon='TRIA_DOWN')
+        props.direction = 'DOWN'
+
+
+###############################################################################
 
 
 # for manually adding dummy component inputs
@@ -299,6 +458,277 @@ class ComponentsNode(ObjectNodeBase, Node):
     def init(self, context):
         # component outputs added manually for now
         pass
+
+
+@object_node_item('Mockups')
+class ValueFloatNode(ObjectNodeBase, Node):
+    '''Floating point number'''
+    bl_idname = 'ObjectValueFloatNode'
+    bl_label = 'Float'
+
+    value = FloatProperty(name="Value", default=0.0)
+
+    def draw_buttons(self, context, layout):
+        layout.prop(self, "value", text="")
+
+    def init(self, context):
+        self.outputs.new('NodeSocketFloat', "Value")
+
+@object_node_item('Mockups')
+class ValueIntNode(ObjectNodeBase, Node):
+    '''Integer number'''
+    bl_idname = 'ObjectValueIntNode'
+    bl_label = 'Integer'
+
+    value = IntProperty(name="Value", default=0)
+
+    def draw_buttons(self, context, layout):
+        layout.prop(self, "value", text="")
+
+    def init(self, context):
+        self.outputs.new('NodeSocketInt', "Value")
+
+@object_node_item('Mockups')
+class ValueVectorNode(ObjectNodeBase, Node):
+    '''3D vector'''
+    bl_idname = 'ObjectValueVectorNode'
+    bl_label = 'Vector'
+
+    value = FloatVectorProperty(name="Value", size=3, default=(0.0, 0.0, 0.0))
+
+    def draw_buttons(self, context, layout):
+        col = layout.column(align=True)
+        col.prop(self, "value", text="")
+
+    def init(self, context):
+        self.outputs.new('NodeSocketVector', "Value")
+
+@object_node_item('Mockups')
+class ValueColorNode(ObjectNodeBase, Node):
+    '''RGBA color'''
+    bl_idname = 'ObjectValueColorNode'
+    bl_label = 'Color'
+
+    value = FloatVectorProperty(name="Value", size=4, subtype='COLOR',
+                                default=(0.0, 0.0, 0.0, 1.0), min=0.0, max=1.0)
+
+    def draw_buttons(self, context, layout):
+        layout.template_color_picker(self, "value", value_slider=True)
+
+    def init(self, context):
+        self.outputs.new('NodeSocketColor', "Value")
+
+
+@object_node_item('Mockups')
+class MathNode(ObjectNodeBase, Node):
+    '''Math '''
+    bl_idname = 'ObjectMathNode'
+    bl_label = 'Math'
+
+    _mode_items = [
+        ('ADD_FLOAT', 'Add', '', 'NONE', 0),
+        ('SUB_FLOAT', 'Subtract', '', 'NONE', 1),
+        ('MUL_FLOAT', 'Multiply', '', 'NONE', 2),
+        ('DIV_FLOAT', 'Divide', '', 'NONE', 3),
+        ('SINE', 'Sine', '', 'NONE', 4),
+        ('COSINE', 'Cosine', '', 'NONE', 5),
+        ('TANGENT', 'Tangent', '', 'NONE', 6),
+        ('ARCSINE', 'Arcsine', '', 'NONE', 7),
+        ('ARCCOSINE', 'Arccosine', '', 'NONE', 8),
+        ('ARCTANGENT', 'Arctangent', '', 'NONE', 9),
+        ('POWER', 'Power', '', 'NONE', 10),
+        ('LOGARITHM', 'Logarithm', '', 'NONE', 11),
+        ('MINIMUM', 'Minimum', '', 'NONE', 12),
+        ('MAXIMUM', 'Maximum', '', 'NONE', 13),
+        ('ROUND', 'Round', '', 'NONE', 14),
+        ('LESS_THAN', 'Less Than', '', 'NONE', 15),
+        ('GREATER_THAN', 'Greater Than', '', 'NONE', 16),
+        ('MODULO', 'Modulo', '', 'NONE', 17),
+        ('ABSOLUTE', 'Absolute', '', 'NONE', 18),
+        ('CLAMP', 'Clamp', '', 'NONE', 19),
+        ('SQRT', 'Square Root', '', 'NONE', 20),
+    ]
+    mode = EnumProperty(name="Mode",
+                        items=_mode_items)
+
+    def draw_buttons(self, context, layout):
+        layout.prop(self, "mode")
+
+    def init(self, context):
+        self.inputs.new('NodeSocketFloat', "Value")
+        self.inputs.new('NodeSocketFloat', "Value")
+        self.outputs.new('NodeSocketFloat', "Value")
+
+
+@object_node_item('Mockups')
+class VectorMathNode(ObjectNodeBase, Node):
+    '''Vector Math'''
+    bl_idname = 'ObjectVectorMathNode'
+    bl_label = 'Vector Math'
+
+    _mode_items = [
+        ('ADD_FLOAT3', 'Add', '', 'NONE', 0),
+        ('SUB_FLOAT3', 'Subtract', '', 'NONE', 1),
+        ('MUL_FLOAT3', 'Multiply', '', 'NONE', 2),
+        ('DIV_FLOAT3', 'Divide', '', 'NONE', 3),
+        ('AVERAGE_FLOAT3', 'Average', '', 'NONE', 4),
+        ('DOT_FLOAT3', 'Dot Product', '', 'NONE', 5),
+        ('CROSS_FLOAT3', 'Cross Product', '', 'NONE', 6),
+        ('NORMALIZE_FLOAT3', 'Normalize', '', 'NONE', 7),
+        ('LENGTH_FLOAT3', 'Vector Length', '', 'NONE', 8),
+    ]
+    mode = EnumProperty(name="Mode",
+                        items=_mode_items)
+
+    def draw_buttons(self, context, layout):
+        layout.prop(self, "mode")
+
+    def init(self, context):
+        self.inputs.new('NodeSocketVector', "Vector")
+        self.inputs.new('NodeSocketVector', "Vector")
+        self.outputs.new('NodeSocketVector', "Vector")
+        self.outputs.new('NodeSocketFloat', "Value")
+
+
+@object_node_item('Mockups')
+class SeparateVectorNode(ObjectNodeBase, Node):
+    '''Separate vector into elements'''
+    bl_idname = 'ObjectSeparateVectorNode'
+    bl_label = 'Separate Vector'
+
+    def init(self, context):
+        self.inputs.new('NodeSocketVector', "Vector")
+        self.outputs.new('NodeSocketFloat', "X")
+        self.outputs.new('NodeSocketFloat', "Y")
+        self.outputs.new('NodeSocketFloat', "Z")
+
+
+@object_node_item('Mockups')
+class CombineVectorNode(ObjectNodeBase, Node):
+    '''Combine vector from component values'''
+    bl_idname = 'ObjectCombineVectorNode'
+    bl_label = 'Combine Vector'
+
+    def init(self, context):
+        self.inputs.new('NodeSocketFloat', "X")
+        self.inputs.new('NodeSocketFloat', "Y")
+        self.inputs.new('NodeSocketFloat', "Z")
+        self.outputs.new('NodeSocketVector', "Vector")
+
+@object_node_item('Mockups')
+class TranslationTransformNode(ObjectNodeBase, Node):
+    '''Create translation from a vector'''
+    bl_idname = 'ObjectTranslationTransformNode'
+    bl_label = 'Translation Transform'
+
+    def init(self, context):
+        self.inputs.new('TransformSocket', "")
+        self.inputs.new('NodeSocketVector', "Vector")
+        self.outputs.new('TransformSocket', "")
+
+
+@object_node_item('Mockups')
+class GetTranslationNode(ObjectNodeBase, Node):
+    '''Get translation vector from a transform'''
+    bl_idname = 'ObjectGetTranslationNode'
+    bl_label = 'Get Translation'
+
+    def init(self, context):
+        self.inputs.new('TransformSocket', "")
+        self.outputs.new('NodeSocketVector', "Vector")
+
+
+_euler_order_items = [
+    ('XYZ', "XYZ", "", 0, 1),
+    ('XZY', "XZY", "", 0, 2),
+    ('YXZ', "YXZ", "", 0, 3),
+    ('YZX', "YZX", "", 0, 4),
+    ('ZXY', "ZXY", "", 0, 5),
+    ('ZYX', "ZYX", "", 0, 6),
+    ]
+_prop_euler_order = EnumProperty(name="Euler Order", items=_euler_order_items, default='XYZ')
+
+@object_node_item('Mockups')
+class EulerTransformNode(ObjectNodeBase, Node):
+    '''Create rotation from Euler angles'''
+    bl_idname = 'ObjectEulerTransformNode'
+    bl_label = 'Euler Transform'
+
+    euler_order = _prop_euler_order
+    euler_order_value = enum_property_value_prop('euler_order')
+
+    def draw_buttons(self, context, layout):
+        layout.prop(self, "euler_order")
+
+    def init(self, context):
+        self.inputs.new('TransformSocket', "")
+        self.inputs.new('NodeSocketVector', "Euler Angles")
+        self.outputs.new('TransformSocket', "")
+
+
+class GetEulerNode(ObjectNodeBase, Node):
+    '''Get euler angles from a transform'''
+    bl_idname = 'ObjectGetEulerNode'
+    bl_label = 'Get Euler Angles'
+
+    euler_order = _prop_euler_order
+    euler_order_value = enum_property_value_prop('euler_order')
+
+    def draw_buttons(self, context, layout):
+        layout.prop(self, "euler_order")
+
+    def init(self, context):
+        self.inputs.new('TransformSocket', "")
+        self.outputs.new('NodeSocketVector', "Euler Angles")
+
+
+@object_node_item('Mockups')
+class AxisAngleTransformNode(ObjectNodeBase, Node):
+    '''Create rotation from axis and angle'''
+    bl_idname = 'ObjectAxisAngleTransformNode'
+    bl_label = 'Axis/Angle Transform'
+
+    def init(self, context):
+        self.inputs.new('TransformSocket', "")
+        self.inputs.new('NodeSocketVector', "Axis")
+        self.inputs.new('NodeSocketFloat', "Angle")
+        self.outputs.new('TransformSocket', "")
+
+
+@object_node_item('Mockups')
+class GetAxisAngleNode(ObjectNodeBase, Node):
+    '''Get axis and angle from a transform'''
+    bl_idname = 'ObjectGetAxisAngleNode'
+    bl_label = 'Get Axis/Angle'
+
+    def init(self, context):
+        self.inputs.new('TransformSocket', "")
+        self.outputs.new('NodeSocketVector', "Axis")
+        self.outputs.new('NodeSocketFloat', "Angle")
+
+
+@object_node_item('Mockups')
+class ScaleTransformNode(ObjectNodeBase, Node):
+    '''Create transform from a scaling vector'''
+    bl_idname = 'ObjectScaleTransformNode'
+    bl_label = 'Scale Transform'
+
+    def init(self, context):
+        self.inputs.new('TransformSocket', "")
+        self.inputs.new('NodeSocketVector', "Scale")
+        self.outputs.new('TransformSocket', "")
+
+
+@object_node_item('Mockups')
+class GetScaleNode(ObjectNodeBase, Node):
+    '''Get scale from a transform'''
+    bl_idname = 'ObjectGetScaleNode'
+    bl_label = 'Get Scale'
+
+    def init(self, context):
+        self.inputs.new('TransformSocket', "")
+        self.outputs.new('NodeSocketVector', "Scale")
+
 
 @object_node_item('Mockups')
 class RenderGeometryOutputNode(ObjectNodeBase, Node, DynamicSocketListNode):
@@ -408,6 +838,164 @@ class CacheComponentsNode(ObjectNodeBase, Node, DynamicSocketListNode):
     def dynamic_socket_append(self, socketlist):
         socket = socketlist.new("ObjectComponentSocket", "")
         return socket
+
+
+@object_node_item('Mockups')
+class ParticleInputNode(ObjectNodeBase, Node):
+    '''Existing particles'''
+    bl_idname = 'ParticleInputNode'
+    bl_label = 'Particle Input'
+
+    def init(self, context):
+        self.outputs.new('ObjectComponentSocket', "Particles")
+
+@object_node_item('Mockups')
+class ParticleOutputNode(ObjectNodeBase, Node, DynamicSocketListNode):
+    '''Define the new particle state after update'''
+    bl_idname = 'ParticleOutputNode'
+    bl_label = 'Particle Output'
+
+    def dynamic_socket_append(self, socketlist):
+        socket = socketlist.new("ObjectComponentSocket", "")
+        socket.is_readonly = True
+        return socket
+
+@object_node_item('Mockups')
+class CreateParticlesNode(ObjectNodeBase, Node):
+    '''Create new particles over time'''
+    bl_idname = 'CreateParticlesNode'
+    bl_label = 'Create Particles'
+
+    def _options_update(self, context):
+        use_amount = self.use_fixed_amount
+        use_rate = self.use_variable_rate
+        if use_amount:
+            self.inputs['Amount'].enabled = True
+            self.inputs['Rate'].enabled = use_rate
+            self.inputs["Frame Start"].enabled = not use_rate
+            self.inputs["Frame End"].enabled = not use_rate
+        else:
+            self.inputs["Amount"].enabled = False
+            self.inputs["Rate"].enabled = True
+            self.inputs["Frame Start"].enabled = False
+            self.inputs["Frame End"].enabled = False
+    use_fixed_amount = BoolProperty(name="Use Fixed Amount",
+                                     description="Create a fixed total number of particles",
+                                     default=False,
+                                     update=_options_update)
+    use_variable_rate = BoolProperty(name="Use Variable Rate",
+                                     description="Use a variable rate instead of a frame range",
+                                     default=False,
+                                     update=_options_update)
+
+    def draw_buttons(self, context, layout):
+        layout.prop(self, "use_fixed_amount")
+        if self.use_fixed_amount:
+            layout.prop(self, "use_variable_rate")
+
+    def init(self, context):
+        amount = self.inputs.new('NodeSocketInt', "Amount")
+        amount.default_value = 1000
+        rate = self.inputs.new('NodeSocketFloat', "Rate")
+        rate.default_value = 10.0
+        
+        frame_start = self.inputs.new('NodeSocketInt', "Frame Start")
+        frame_start.default_value = 1
+        frame_end = self.inputs.new('NodeSocketInt', "Frame End")
+        frame_end.default_value = 250
+        
+        self.outputs.new('ObjectComponentSocket', "Particles")
+
+        self._options_update(context)
+
+@object_node_item('Mockups')
+class RandomSpherePointNode(ObjectNodeBase, Node):
+    '''Get random points on a unit sphere'''
+    bl_idname = 'RandomSpherePointNode'
+    bl_label = 'Random Sphere Point'
+
+    def init(self, context):
+        self.inputs.new('NodeSocketInt', "Seed")
+        self.outputs.new('NodeSocketVector', "point")
+
+@object_node_item('Mockups')
+class SomeParticleEmitterNode(ObjectNodeBase, Node):
+    bl_idname = 'SomeParticleEmitterNode'
+    bl_label = 'Some Particle Emitter'
+
+    def init(self, context):
+        self.outputs.new('ObjectComponentSocket', "Particles")
+
+@object_node_item('Mockups')
+class JoinParticlesNode(ObjectNodeBase, Node, DynamicSocketListNode):
+    bl_idname = 'JoinParticlesNode'
+    bl_label = 'Join Particles'
+
+    def init(self, context):
+        super().init(context)
+
+        self.outputs.new('ObjectComponentSocket', "")
+
+    def dynamic_socket_append(self, socketlist):
+        socket = socketlist.new("ObjectComponentSocket", "")
+        return socket
+
+@object_node_item('Mockups')
+class SplitParticlesNode(ObjectNodeBase, Node):
+    bl_idname = 'SplitParticlesNode'
+    bl_label = 'Split Particles'
+
+    def init(self, context):
+        self.inputs.new('ObjectComponentSocket', "Particles")
+        self.inputs.new('NodeSocketInt', "Condition")
+        self.outputs.new('ObjectComponentSocket', "True")
+        self.outputs.new('ObjectComponentSocket', "False")
+
+@object_node_item('Mockups')
+class MeshSurfaceSampleNode(ObjectNodeBase, Node):
+    '''Get random points on a mesh surface'''
+    bl_idname = 'MeshSurfaceSampleNode'
+    bl_label = 'Mesh Surface Sample'
+
+    surface_object = DummyIDRefProperty(name="Surface Object")
+
+    def draw_buttons(self, context, layout):
+        draw_dummy_id_ref(layout, self, "surface_object")
+
+    def init(self, context):
+        self.inputs.new('NodeSocketInt', "Seed")
+        self.outputs.new('NodeSocketVector', "Point")
+        self.outputs.new('NodeSocketVector', "Vertex Weights")
+
+@object_node_item('Mockups')
+class MeshSurfaceTrackNode(ObjectNodeBase, Node):
+    '''Evaluate sample point on a deformed mesh surface'''
+    bl_idname = 'MeshSurfaceTrackNode'
+    bl_label = 'Mesh Surface Track'
+
+    surface_object = DummyIDRefProperty(name="Surface Object")
+
+    def draw_buttons(self, context, layout):
+        draw_dummy_id_ref(layout, self, "surface_object")
+
+    def init(self, context):
+        self.inputs.new('NodeSocketVector', "Vertex Weights")
+        self.outputs.new('NodeSocketVector', "Point")
+
+@object_node_item('Mockups')
+class VolumeSampleNode(ObjectNodeBase, Node):
+    '''Get random points in volume grid'''
+    bl_idname = 'VolumeSampleNode'
+    bl_label = 'Volume Sample'
+
+    volume_object = DummyIDRefProperty(name="Volume Object")
+
+    def draw_buttons(self, context, layout):
+        draw_dummy_id_ref(layout, self, "volume_object")
+
+    def init(self, context):
+        self.inputs.new('NodeSocketInt', "Seed")
+        self.outputs.new('NodeSocketVector', "Point")
 
 
 @object_node_item('Mockups')
@@ -524,6 +1112,7 @@ _particle_attribute_set = [
     ("id", 'NodeSocketInt'),
     ("location", 'NodeSocketVector'),
     ("velocity", 'NodeSocketVector'),
+    ("origin", 'NodeSocketVector'),
     ]
 GetParticlesAttributeNode, SetParticlesAttributeNode = \
     make_attribute_nodes(_particle_attribute_set, 'location',
@@ -676,6 +1265,7 @@ def register():
     global _object_node_categories
 
     bpy.utils.register_module(__name__)
+    register_object_components()
 
     node_categories = []
     for name, items in _object_node_categories.items():
@@ -704,4 +1294,5 @@ def unregister():
         wm.keyconfigs.default.keymaps.remove(km)
     keymaps.clear()
 
+    unregister_object_components()
     bpy.utils.unregister_module(__name__)
