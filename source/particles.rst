@@ -81,6 +81,23 @@ Extra Topology Elements
 =======================
 .. todo:: topology (mesh as particles), edge data (SPH)
 
+Data Context and Node Levels
+============================
+The node workflows in this chapter will be dealing with a single particle component only. The output node's meaning is umambiguous then, because the particle component forms the context for all data access.
+
+The workflow on the object level must somehow be separated from the particle level, lest it becomes too complicated to assign data flow to a specific component. This could be achieved by treating particle operations in a sub-tree of the nodes, like a node group.
+
+.. figure:: /images/fracture_nodes_top.png
+  :width: 60%
+  :figclass: align-center
+
+  Object level nodes assign components to node slots.
+
+.. figure:: /images/fracture_nodes_rigidbody1.png
+  :width: 60%
+  :figclass: align-center
+
+  Internal node networks work with defined components.
 
 Workflow Examples: Emitting Particles
 -------------------------------------
@@ -99,7 +116,7 @@ Generate Plain Particles
   :width: 60%
   :figclass: align-center
 
-  \2. In object nodes, the output node defines the particle state after an update. If nothing is plugged into the output, the particle state remains unchanged.
+  \2. In particle nodes, the output node defines the particle state after an update. If nothing is plugged into the output, the particle state remains unchanged.
 
   .. todo How to associate the output node with the right particle component? This could happen in a node group dedicated to the component, to define context.
 
@@ -216,18 +233,27 @@ Workflow Examples: Rendering Particles
 
 Particles are an incredibly flexible tool for controlling renderable entities in a scene. Particles themselves are not actually renderable due to their point-like nature. They serve as the basis for other effects to produce renderable geometry.
 
+.. note:: Rendering for particles usually involved generating external data which is not part of the particle component itself (meshes, duplis, volumes). Therefore these node workflows are situated in the higher-level object nodes, rather than the particle nodes themselves (see also `Data Context and Node Levels`_).
+
 Billboards
 ==========
 
 Billboards consist of a simple quad faces generated for each particle. They typically are facing the camera, which provides a cheap way to render uniform "blobs" of matter. The most efficient implementation of billboards is probably through mesh faces.
 
-1. "Billboards" node takes a particle system and generates a mesh.
+.. figure:: /images/particles_billboards1.png
+  :width: 60%
+  :figclass: align-center
+
+  "Billboards" node takes a particle system and generates a mesh.
 
 Instancing Objects
 ==================
 
-1. "Make Duplis" node takes a particle system and generates a list of object instances (aka. "Dupli List").
-2. Like many other complex nodes, "Make Duplis" can be copied and modified for non-standard behavior by editing it like a node group.
+.. figure:: /images/particles_instancing1.png
+  :width: 60%
+  :figclass: align-center
+
+  "Make Duplis" node takes a particle system and generates a list of object instances (aka. "Dupli List").
 
 Fluid Surface Generation
 ========================

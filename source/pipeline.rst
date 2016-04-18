@@ -2,86 +2,82 @@
 Pipelines, Linking, Proxies, and Overrides
 ******************************************
 
-Typical rigger+animator workflow with proxies using the example of [simple character]
--------------------------------------------------------------------------------------
+Typical rigger+animator workflow with proxies using the example of
+------------------------------------------------------------------
 
-[This should be as simple as possible: no hair/fur, simple rig (no spline ik), perhaps a non-character rig?]
+.. [This should be as simple as possible: no hair/fur, simple rig (no spline ik), perhaps a non-character rig?]
 
-+-------------------------------------------------+-------------------------------------------------+
-| .. image:: /images/placeholder.png              | .. image:: /images/placeholder.png              |
-|   :width: 100%                                  |   :width: 100%                                  |
-|                                                 |                                                 |
-| \1. Base mesh                                   | \2. Rigging                                     |
-|                                                 |                                                 |
-+-------------------------------------------------+-------------------------------------------------+
-| .. image:: /images/placeholder.png              | .. image:: /images/placeholder.png              |
-|   :width: 100%                                  |   :width: 100%                                  |
-|                                                 |                                                 |
-| \3. Linking mesh & rig                          | \4. Linked pose is locked!                      |
-|                                                 |                                                 |
-+-------------------------------------------------+-------------------------------------------------+
-| .. image:: /images/placeholder.png              | .. image:: /images/placeholder.png              |
-|   :width: 100%                                  |   :width: 100%                                  |
-|                                                 |                                                 |
-| \5. Proxy armature                              | \6. Lighting/Render scene                       |
-|                                                 |                                                 |
-+-------------------------------------------------+-------------------------------------------------+
+.. todo:: Add illustrating image for each step
 
-1. [show basic mesh object during modeling process in the viewport]
-   "Modeler Molly creates a Mesh object, models, sculpts and textures it. Everything is local here since we're at the very beginning of the pipeline."
-2. [show rig bones in viewport]
-   "Rigger Ricky links in the mesh object from Molly. Then he adds a new Armature object. His main work is creating bones in the armature and then adding constraints to the pose bones for control during animation."
-3. [show link dialog for mesh object]
-   "Animator Annie links in both the mesh object from Molly and the Armature object from Ricky. The armature object can be linked indirectly through the mesh object."
-4. [show immovable pose bones (how? greyed out panel?)]
-   "Annie now wants to animate by moving the pose bones in the armature object. But she has a problem: the armature object is linked, so the pose bones can not be moved by her. In pipeline terms: the pose bones are ‘owned’ by Ricky because he first created the object."
-5. [show deformed rig in viewport after moving a proxy pose bone]
-   "Annie therefore creates a 'proxy' for the linked armature object. This is a local object, so she can move the pose bones there, and they override the linked object."
-6. [show final render scene viewport with the object linked in]
-   “When all the animation for a shot is completed, Lisa the lighting TD creates a new file for the final rendering. All the assets are also linked into that file, so that fixes can still be made if necessary. Also importantly any linked objects are instanced as groups rather than used directly, which allows Lisa to move them around.”
+1. Base Mesh
 
-Simple non-dynamic hair setup as used for Coro, the main character in Caminandes
---------------------------------------------------------------------------------
+   Modeler Molly creates a Mesh object, models, sculpts and textures it. Everything is local here since we're at the very beginning of the pipeline.
 
-+-------------------------------------------------+-------------------------------------------------+
-| .. image:: /images/koro_modeling.png            | .. image:: /images/koro_grooming.png            |
-|   :width: 100%                                  |   :width: 100%                                  |
-|                                                 |                                                 |
-| \1. Base mesh                                   | \2. Grooming                                    |
-|                                                 |                                                 |
-+-------------------------------------------------+-------------------------------------------------+
-| .. image:: /images/koro_rigging.png             | .. image:: /images/koro_animation.png           |
-|   :width: 100%                                  |   :width: 100%                                  |
-|                                                 |                                                 |
-| \3. Rigging                                     | \4. Animation                                   |
-|                                                 |                                                 |
-+-------------------------------------------------+-------------------------------------------------+
-| .. image:: /images/placeholder.png              | .. image:: /images/placeholder.png              |
-|   :width: 100%                                  |   :width: 100%                                  |
-|                                                 |                                                 |
-| \5. Lighting                                    | \6. Simulation                                  |
-|                                                 |                                                 |
-+-------------------------------------------------+-------------------------------------------------+
+2. Rigging
 
-1. [show Coro model without hair]
-   "Modeler Molly sets up the mesh object as before."
-2. [show Coro hair edit mode during grooming]
-   "Hair specialist Harry takes over (appends) the mesh object from Molly. This will work under the assumption that Molly doesn’t need to touch the Object datablock any longer, because she works with Mesh datablock instead!
+   Rigger Ricky links in the mesh object from Molly. Then he adds a new Armature object. His main work is creating bones in the armature and then adding constraints to the pose bones for control during animation.
+
+3. Linking mesh & rig
+
+   Animator Annie links in both the mesh object from Molly and the Armature object from Ricky. The armature object can be linked indirectly through the mesh object.
+
+4. Linked pose is locked!
+   
+   Annie now wants to animate by moving the pose bones in the armature object. But she has a problem: the armature object is linked, so the pose bones can not be moved by her. In pipeline terms: the pose bones are ‘owned’ by Ricky because he first created the object.
+
+5. Proxy armature
+
+   Annie therefore creates a 'proxy' for the linked armature object. This is a local object, so she can move the pose bones there, and they override the linked object.
+
+6. Lighting/Render scene
+
+   When all the animation for a shot is completed, Lisa the lighting TD creates a new file for the final rendering. All the assets are also linked into that file, so that fixes can still be made if necessary. Also importantly any linked objects are instanced as groups rather than used directly, which allows Lisa to move them around.
+
+Simple non-dynamic hair setup
+-----------------------------
+
+As used for Coro, the main character in Caminandes.
+
+.. figure:: /images/koro_modeling.png
+   :width: 60%
+   :figclass: align-center
+
+1. Modeler Molly sets up the mesh object as before.
+
+.. figure:: /images/koro_grooming.png
+   :width: 60%
+   :figclass: align-center
+
+2. Hair specialist Harry takes over (appends) the mesh object from Molly. This will work under the assumption that Molly doesn’t need to touch the Object datablock any longer, because she works with Mesh datablock instead!
 
    He then adds a hair system to the character. “Grooming” defines the style and look of the character. Note that linking Molly's object would be a problem, because then he couldn't add a hair system to it. Editing conflict is avoided here only by passing mesh object ownership from Ricky to Harry before animation!"
 
-3. [show Coro rig]
-   "Rigger Ricky now continues by linking the object with hair from Harry (rather than directly using Molly’s mesh object)."
-4. [show Coro pose with deformed hair]
-   "Annie continues as before by making a proxy object for the armature and animating its pose bones. She doesn't have to animate the hair itself, but it helps her to have it visible during animation[1].”
-5. “Lisa also can use the object with hair as she did before. The hair displacement from mesh surface deformation (the “scalp”) is calculated automatically as the proxy pose defines the animation.”
+.. figure:: /images/koro_rigging.png
+   :width: 60%
+   :figclass: align-center
 
-Dynamic hair sim [Victor or Franck hair shot]
----------------------------------------------
+3. Rigger Ricky now continues by linking the object with hair from Harry (rather than directly using Molly’s mesh object).
+
+.. figure:: /images/koro_animation.png
+   :width: 60%
+   :figclass: align-center
+
+4. Annie continues as before by making a proxy object for the armature and animating its pose bones. She doesn't have to animate the hair itself, but it helps her to have it visible during animation[1].
+
+.. figure:: /images/placeholder.png
+   :width: 60%
+   :figclass: align-center
+
+5. Lisa also can use the object with hair as she did before. The hair displacement from mesh surface deformation (the “scalp”) is calculated automatically as the proxy pose defines the animation.
+
+Dynamic hair sim
+----------------
+
+.. [Victor or Franck hair shot]
 
 Serious trouble ensues because of linked objects after animation.
-   
-   "Steps 1-4 happen as before: model, groom, rig, animate, and setup the complete render scene.”
+
+Steps 1-4 happen as before: model, groom, rig, animate, and setup the complete render scene.
 
 5. "Simulation specialist Simon now has to simulate motion of Harry's hair strands. Long hair has to move in the wind and collide with the character's body. But Simon has a problem similar to the one Annie had before: the object with the hair system is linked and he cannot add or tweak a simulation on it[2]. Simon has a few options now:
 
@@ -93,63 +89,48 @@ Serious trouble ensues because of linked objects after animation.
 Animation Offsets for Simple Variation
 --------------------------------------
 
-+-------------------------------------------------+-------------------------------------------------+
-| .. image:: /images/placeholder.png              | .. image:: /images/placeholder.png              |
-|   :width: 100%                                  |   :width: 100%                                  |
-|                                                 |                                                 |
-| \1. Single Penguin                              | \2. Identical Instances                         |
-|                                                 |                                                 |
-+-------------------------------------------------+-------------------------------------------------+
-| .. image:: /images/placeholder.png              | .. image:: /images/placeholder.png              |
-|   :width: 100%                                  |   :width: 100%                                  |
-|                                                 |                                                 |
-| \3. Offset with NLA                             | \4. Offset with Mesh Cache                      |
-|                                                 |                                                 |
-+-------------------------------------------------+-------------------------------------------------+
-| .. image:: /images/placeholder.png                                                                |
-|   :width: 100%                                                                                    |
-|                                                                                                   |
-| \5. Final Crowd Shot                                                                              |
-|                                                                                                   |
-+-------------------------------------------------+-------------------------------------------------+
-
 In “Caminandes: Llamigos” the final shot contains a group of penguins. A cheap way to avoid repetitive animation is needed.
 
 A detailed description of the technique can be found on the Blender Cloud: `Quick Penguin Crowds using MDD caches <https://cloud.blender.org/p/caminandes-3/#56bc8f68c379cf0079715f85>`_
 
-1. Molly, Ricky and Annie create a single animated penguin as outlined before.
-2. Now Lisa can link in the animated penguin and create a large number of instances. However, all of these instances share the same object and animation, so they move in perfect sync. To make the shot believable she wants to offset each penguin’s action so that they look like different characters (at least for a simple, short background sequence).
-3. To do this Lisa could employ the NLA editor to offset the actions. But this is not a suitable tool when the objects are linked. Furthermore the NLA still relies on evaluation of armatures for producing the deformation, which become prohibitively slow for multiple characters.
-4. A better solution is the use of the mesh cache modifier. After exporting the animation into a MDD file (which stores just deformation) Lisa can create a plain copy of the penguin and replace all rigging and animation modifiers with a single cache import. The mesh cache modifier allows offsetting and remapping the animation in a very simple and straightforward way.
-5. Lisa can now create multiple different penguins simply by making several copies of the original. Even though these are local copies, rather than linked instances, animation fixes will still be imported via the shared cache.
+1. Single Penguin
+
+   Molly, Ricky and Annie create a single animated penguin as outlined before.
+
+2. Identical Instances
+
+   Now Lisa can link in the animated penguin and create a large number of instances. However, all of these instances share the same object and animation, so they move in perfect sync. To make the shot believable she wants to offset each penguin’s action so that they look like different characters (at least for a simple, short background sequence).
+
+3. Offset with NLA
+
+   To do this Lisa could employ the NLA editor to offset the actions. But this is not a suitable tool when the objects are linked. Furthermore the NLA still relies on evaluation of armatures for producing the deformation, which become prohibitively slow for multiple characters.
+
+4. Offset with Mesh Cache
+
+   A better solution is the use of the mesh cache modifier. After exporting the animation into a MDD file (which stores just deformation) Lisa can create a plain copy of the penguin and replace all rigging and animation modifiers with a single cache import. The mesh cache modifier allows offsetting and remapping the animation in a very simple and straightforward way.
+
+5. Final Crowd Shot
+
+   Lisa can now create multiple different penguins simply by making several copies of the original. Even though these are local copies, rather than linked instances, animation fixes will still be imported via the shared cache.
 
 Animation Variants [multiple sheep in tornado shot OR penguins in Caminandes 3]
 -------------------------------------------------------------------------------
 
-+-------------------------------------------------+-------------------------------------------------+
-| .. image:: /images/placeholder.png                                                                |
-|   :width: 100%                                                                                    |
-|                                                                                                   |
-| \1-3. Single Sheep                                                                                |
-|                                                                                                   |
-+-------------------------------------------------+-------------------------------------------------+
-| .. image:: /images/placeholder.png              | .. image:: /images/placeholder.png              |
-|   :width: 100%                                  |   :width: 100%                                  |
-|                                                 |                                                 |
-| \2. Single Proxy Limitation                     | \3. Identical Hair Simulation                   |
-|                                                 |                                                 |
-+-------------------------------------------------+-------------------------------------------------+
-
-[Override mechanism of proxies does not allow use of multiple animation variants.]
+Override mechanism of proxies does not allow use of multiple animation variants.
 
 For the Gooseberry tornado shots a flock of sheep has to be grouped around the central character Victor. Many sheep share the same base mesh, rig and hair groom, but fur coats must be simulated individually to account for relative wind direction and differences in sheep bodies (collision).
 
 .. note:: In the final version of the movie a drastically simplified approach was taken. Here is a description of the original more complex idea, for illustration purposes.
 
-Steps 1-3 are regular modeling, grooming, and rigging as before.
+Steps 1-3 are regular modeling, grooming, and rigging as before, for a single sheep character.
 
-4. Annie should animate each sheep individually, but is hampered by the proxy system: Because proxies write back to the original object there can only ever be one single proxy per sheep model, and consequently just one active action for all the instances.
-5. Simon now has to simulate hair motion as before. But in addition to inaccessible linked simulation settings there is a new problem: Even if he managed to tweak the simulation, both the settings and the resulting motion cache would be associated with the original model. Just like Annie he can only use one version of the hair motion at a time.
+4. Single Proxy Limitation
+
+   Annie should animate each sheep individually, but is hampered by the proxy system: Because proxies write back to the original object there can only ever be one single proxy per sheep model, and consequently just one active action for all the instances.
+
+5. Identical Hair Simulation
+
+   Simon now has to simulate hair motion as before. But in addition to inaccessible linked simulation settings there is a new problem: Even if he managed to tweak the simulation, both the settings and the resulting motion cache would be associated with the original model. Just like Annie he can only use one version of the hair motion at a time.
 
 Material/Lighting py overrides in local scene
 ---------------------------------------------

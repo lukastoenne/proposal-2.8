@@ -999,6 +999,38 @@ class VolumeSampleNode(ObjectNodeBase, Node):
 
 
 @object_node_item('Mockups')
+class ParticleBillboardsNode(ObjectNodeBase, Node):
+    '''Create a billboard mesh from particles'''
+    bl_idname = 'ParticleBillboardsNode'
+    bl_label = 'Particle Billboards'
+
+    align = enum_property_copy(bpy.types.ParticleSettings, "billboard_align", "Alignment")
+
+    def draw_buttons(self, context, layout):
+        layout.prop(self, "align")
+
+    def init(self, context):
+        self.inputs.new('ObjectComponentSocket', "Particles")
+        self.outputs.new('ObjectComponentSocket', "Mesh")
+
+@object_node_item('Mockups')
+class MakeObjectDuplisNode(ObjectNodeBase, Node):
+    '''Create object instances from particles'''
+    bl_idname = 'MakeObjectDuplisNode'
+    bl_label = 'Make Object Duplis'
+
+    object = DummyIDRefProperty(name="Object", description="Object to instantiate")
+
+    def draw_buttons(self, context, layout):
+        draw_dummy_id_ref(layout, self, "object")
+
+    def init(self, context):
+        self.inputs.new('ObjectComponentSocket', "Particles")
+        self.inputs.new('TransformSocket', "Transform")
+        self.outputs.new('ObjectComponentSocket', "Instances")
+
+
+@object_node_item('Mockups')
 class HairSimNode(ObjectNodeBase, Node):
     '''Hair simulation'''
     bl_idname = 'HairSimNode'
