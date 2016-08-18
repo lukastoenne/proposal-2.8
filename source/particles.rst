@@ -306,6 +306,7 @@ Modern fluid VFX in movie productions and the like is almost exclusively of a "l
 
 .. note:: Smoothed Particle Hydrodynamics (SPH) is not very useful for simulation purposes in CG. The computational cost is far too great compared to modern lagrangian methods such as FLIP. In it's current implementation in Blender it also tends to become unstable quickly. It should therefore be considered of only theoretical interest.
 
+SPH example usage: https://youtu.be/j4Jd0AqnmXY?t=36s
 
 Workflow Examples: Events
 -------------------------
